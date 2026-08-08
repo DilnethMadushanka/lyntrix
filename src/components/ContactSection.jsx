@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle2, ShieldCheck, Clock, Sparkles } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle2, ShieldCheck, Clock, Sparkles, AlertCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { db } from '../services/db';
+import { emailService } from '../services/emailService';
 
 export default function ContactSection({ estimateData, onInquirySubmitted }) {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function ContactSection({ estimateData, onInquirySubmitted }) {
 
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailNotice, setEmailNotice] = useState('');
 
   useEffect(() => {
     if (estimateData) {
@@ -27,38 +29,40 @@ export default function ContactSection({ estimateData, onInquirySubmitted }) {
     }
   }, [estimateData]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      // Save lead proposal to Cloud DB!
-      const newLead = {
-        id: `LYN-${Math.floor(1000 + Math.random() * 9000)}`,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone || 'N/A',
-        service: formData.service,
-        scale: estimateData ? estimateData.scale : 'Custom Project',
-        budget: formData.budget,
-        status: 'New',
-        date: new Date().toISOString().replace('T', ' ').slice(0, 16),
-        details: formData.details
-      };
+    const newLead = {
+      id: `LYN-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || 'N/A',
+      service: formData.service,
+      scale: estimateData ? estimateData.scale : 'Custom Project',
+      budget: formData.budget,
+      status: 'New',
+      date: new Date().toISOString().replace('T', ' ').slice(0, 16),
+      details: formData.details
+    };
 
-      db.addInquiry(newLead);
-      if (onInquirySubmitted) onInquirySubmitted();
+    // Save lead proposal to Cloud DB!
+    db.addInquiry(newLead);
+    if (onInquirySubmitted) onInquirySubmitted();
 
-      setIsSubmitting(false);
-      setSubmitted(true);
-      try {
-        confetti({
-          particleCount: 100,
-          spread: 80,
-          origin: { y: 0.6 }
-        });
-      } catch (err) {}
-    }, 800);
+    // Trigger Automated Email Alert to Admin!
+    const emailResult = await emailService.sendAdminOrderAlert(newLead);
+    setEmailNotice(`📧 Automated Order Alert Dispatched to admin@lyntrix.tech (${emailResult.timestamp})`);
+
+    setIsSubmitting(false);
+    setSubmitted(true);
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    } catch (err) {}
   };
 
   return (
@@ -128,7 +132,7 @@ export default function ContactSection({ estimateData, onInquirySubmitted }) {
                 <span>RAPID DISCOVERY GUARANTEE</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                All business inquiries are acknowledged within <strong>2 hours</strong> during standard business hours. NDA provided upon request.
+                All business inquiries trigger an <strong>Instant Automated Email to Admin</strong> and are acknowledged within 2 hours.
               </p>
             </div>
 
@@ -144,8 +148,16 @@ export default function ContactSection({ estimateData, onInquirySubmitted }) {
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold text-white font-['Outfit']">Proposal Request Saved to Cloud!</h3>
                 <p className="text-slate-300 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-                  Thank you <strong className="text-cyan-400">{formData.name}</strong>. Your project proposal details have been stored securely in our Cloud Database. Our senior consultant will reach out at <strong className="text-cyan-400">{formData.email}</strong> within 2 business hours.
+                  Thank you <strong className="text-cyan-400">{formData.name}</strong>. Your project proposal details have been stored in Cloud DB.
                 </p>
+
+                {emailNotice && (
+                  <div className="p-3 bg-cyan-950/80 border border-cyan-500/60 rounded-xl text-xs font-mono text-cyan-300 max-w-md mx-auto flex items-center justify-center gap-2">
+                    <Mail className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>{emailNotice}</span>
+                  </div>
+                )}
+
                 <button
                   onClick={() => setSubmitted(false)}
                   className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-mono hover:bg-slate-700 transition-colors"
@@ -239,18 +251,18 @@ export default function ContactSection({ estimateData, onInquirySubmitted }) {
                   {isSubmitting ? (
                     <span className="flex items-center gap-2 font-mono">
                       <span className="w-4 h-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
-                      Saving to Cloud Database...
+                      Dispatching Order Email to Admin...
                     </span>
                   ) : (
                     <>
-                      <span>Submit Proposal Request</span>
+                      <span>Submit Order & Notify Admin</span>
                       <Send className="w-4 h-4" />
                     </>
                   )}
                 </button>
 
                 <p className="text-[10px] sm:text-[11px] text-slate-400 text-center font-mono">
-                  🔒 All information is stored in encrypted Cloud DB storage under NDA terms.
+                  📧 Automatically sends instant notification to admin@lyntrix.tech.
                 </p>
 
               </form>

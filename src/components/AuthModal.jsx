@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { User, Mail, Lock, Building, Calendar, Phone, Globe, ShieldCheck, X, Sparkles, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Mail, Lock, Building, Calendar, Phone, Globe, ShieldCheck, X, Sparkles, AlertCircle, ArrowRight, CheckCircle2, KeyRound, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { db } from '../services/db';
+import { emailService } from '../services/emailService';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const [mode, setMode] = useState('signin'); // 'signin', 'signup', or 'google_prompt'
+  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'google_prompt', or 'otp_verify'
   
   // Sign In States
   const [loginEmail, setLoginEmail] = useState('');
@@ -25,8 +26,24 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [googleCompany, setGoogleCompany] = useState('');
   const [googleBirthday, setGoogleBirthday] = useState('');
 
+  // OTP Verification States
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [pendingUserData, setPendingUserData] = useState(null);
+  const [timerSeconds, setTimerSeconds] = useState(110);
+  const otpInputsRef = useRef([]);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // OTP Countdown Timer
+  useEffect(() => {
+    let interval = null;
+    if (mode === 'otp_verify' && timerSeconds > 0) {
+      interval = setInterval(() => setTimerSeconds(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [mode, timerSeconds]);
 
   if (!isOpen) return null;
 
@@ -49,7 +66,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }, 600);
   };
 
-  const handleSignUp = (e) => {
+  // Initiate Registration with OTP Verification
+  const handleInitiateSignUp = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -60,29 +78,84 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
     setLoading(true);
 
+    // Generate 6-Digit OTP
+    const otpResult = await emailService.generateAndSendOTP(email);
+    setGeneratedOtp(otpResult.otpCode);
+    setPendingUserData({
+      name,
+      email,
+      company,
+      birthday,
+      phone,
+      country,
+      authProvider: 'Email'
+    });
+    setTimerSeconds(110);
+    setOtpDigits(['', '', '', '', '', '']);
+    setLoading(false);
+    setMode('otp_verify');
+  };
+
+  // Handle OTP Digit Input Change
+  const handleOtpDigitChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const newDigits = [...otpDigits];
+    newDigits[index] = value.slice(-1);
+    setOtpDigits(newDigits);
+
+    // Auto-focus next input box
+    if (value && index < 5) {
+      otpInputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputsRef.current[index - 1]?.focus();
+    }
+  };
+
+  // Verify 6-Digit OTP Code
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    setError('');
+    const enteredOtp = otpDigits.join('');
+
+    if (enteredOtp.length < 6) {
+      setError('Please enter all 6 digits of the OTP verification code.');
+      return;
+    }
+
+    if (enteredOtp !== generatedOtp) {
+      setError('Invalid OTP code. Please check your verification code and try again.');
+      return;
+    }
+
+    setLoading(true);
     setTimeout(() => {
       try {
-        const newUser = db.registerUser({
-          name,
-          email,
-          company,
-          birthday,
-          phone,
-          country,
-          authProvider: 'Email'
-        });
+        const newUser = db.registerUser(pendingUserData);
         setLoading(false);
-        try { confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } }); } catch (err) {}
+        try { confetti({ particleCount: 110, spread: 85, origin: { y: 0.6 } }); } catch (err) {}
         onAuthSuccess(newUser);
         onClose();
       } catch (err) {
         setLoading(false);
         setError(err.message || 'Registration failed.');
       }
-    }, 800);
+    }, 600);
   };
 
-  // Launch Native Google OAuth 2.0 Identity Popup
+  const handleResendOtp = async () => {
+    setError('');
+    const otpResult = await emailService.generateAndSendOTP(pendingUserData ? pendingUserData.email : email);
+    setGeneratedOtp(otpResult.otpCode);
+    setTimerSeconds(110);
+    setOtpDigits(['', '', '', '', '', '']);
+    alert(`📧 A new 6-digit verification code has been dispatched to ${pendingUserData ? pendingUserData.email : email}.`);
+  };
+
+  // Google OAuth Flow
   const handleLaunchGoogleOAuth = () => {
     setError('');
     setLoading(true);
@@ -96,7 +169,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
           callback: (response) => {
             if (response.access_token) {
-              // Fetch user profile from Google UserInfo API
               fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                 headers: { Authorization: `Bearer ${response.access_token}` }
               })
@@ -133,7 +205,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         setMode('google_prompt');
       }
     } else {
-      // Fallback if script loading or popup blocked
       setLoading(false);
       setMode('google_prompt');
     }
@@ -186,18 +257,24 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         {/* Modal Header */}
         <div className="text-center space-y-2 mb-6">
           <div className="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto border border-cyan-500/30">
-            <User className="w-6 h-6" />
+            {mode === 'otp_verify' ? <KeyRound className="w-6 h-6" /> : <User className="w-6 h-6" />}
           </div>
           <h3 className="text-2xl font-extrabold text-white font-['Outfit']">
-            {mode === 'signin' ? 'Client Portal Sign In' : mode === 'signup' ? 'Create Enterprise Account' : 'Google OAuth Verification'}
+            {mode === 'signin' ? 'Client Portal Sign In' :
+             mode === 'signup' ? 'Create Enterprise Account' :
+             mode === 'otp_verify' ? '2FA Email Verification' :
+             'Google OAuth Verification'}
           </h3>
           <p className="text-xs text-slate-400 font-mono">
-            {mode === 'signin' ? 'ACCESS YOUR PROJECTS & PROPOSALS' : mode === 'signup' ? 'REGISTER COMPANY PROFILE & SCOPE' : 'GOOGLE SINGLE SIGN-ON VERIFICATION'}
+            {mode === 'signin' ? 'ACCESS YOUR PROJECTS & PROPOSALS' :
+             mode === 'signup' ? 'REGISTER COMPANY PROFILE & SCOPE' :
+             mode === 'otp_verify' ? 'ENTER 6-DIGIT CODE SENT TO YOUR EMAIL' :
+             'GOOGLE SINGLE SIGN-ON VERIFICATION'}
           </p>
         </div>
 
-        {/* Toggle Mode Buttons */}
-        {mode !== 'google_prompt' && (
+        {/* Toggle Mode Buttons (Only when not in OTP or Google flow) */}
+        {mode !== 'google_prompt' && mode !== 'otp_verify' && (
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 mb-6">
             <button
               onClick={() => { setMode('signin'); setError(''); }}
@@ -226,7 +303,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         )}
 
         {/* Google SSO Launcher Button */}
-        {mode !== 'google_prompt' && (
+        {mode !== 'google_prompt' && mode !== 'otp_verify' && (
           <div className="mb-5">
             <button
               onClick={handleLaunchGoogleOAuth}
@@ -249,7 +326,72 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </div>
         )}
 
-        {/* Google Identity Prompt Flow */}
+        {/* 6-DIGIT OTP VERIFICATION SCREEN */}
+        {mode === 'otp_verify' && (
+          <form onSubmit={handleVerifyOtp} className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            
+            <div className="p-4 rounded-xl bg-cyan-950/40 border border-cyan-800/60 text-xs font-mono text-center space-y-1.5">
+              <div className="text-cyan-400 font-bold">Verification Code Sent!</div>
+              <div className="text-slate-300">
+                We sent a 6-digit OTP code to <strong className="text-white">{pendingUserData?.email}</strong>.
+              </div>
+
+              {/* Simulated Mailbox Notification Banner */}
+              <div className="mt-3 p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-emerald-400 font-bold flex items-center justify-center gap-2">
+                <Mail className="w-3.5 h-3.5" />
+                <span>[SIMULATED MAILBOX] Your OTP Code is: <u className="tracking-widest">{generatedOtp}</u></span>
+              </div>
+            </div>
+
+            {/* 6 Single-Digit Input Boxes */}
+            <div className="flex justify-center gap-2 sm:gap-3">
+              {otpDigits.map((digit, idx) => (
+                <input
+                  key={idx}
+                  ref={el => otpInputsRef.current[idx] = el}
+                  type="text"
+                  maxLength={1}
+                  value={digit}
+                  onChange={e => handleOtpDigitChange(idx, e.target.value)}
+                  onKeyDown={e => handleOtpKeyDown(idx, e)}
+                  className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold font-mono rounded-xl bg-slate-900 border border-slate-800 text-cyan-300 focus:border-cyan-400 focus:outline-none transition-colors"
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+              <span>Code expires in: <strong className="text-white">{Math.floor(timerSeconds / 60)}:{(timerSeconds % 60).toString().padStart(2, '0')}</strong></span>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                className="text-cyan-400 hover:underline flex items-center gap-1 font-bold"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Resend Code</span>
+              </button>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setMode('signup')}
+                className="flex-1 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs font-bold"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-2 py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
+              >
+                {loading ? 'Verifying Code...' : 'Verify OTP & Activate Account'}
+              </button>
+            </div>
+
+          </form>
+        )}
+
+        {/* Google SSO Prompt */}
         {mode === 'google_prompt' && (
           <form onSubmit={handleCompleteGoogleAuth} className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-mono space-y-2">
@@ -382,7 +524,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
         {/* Email Sign Up Form */}
         {mode === 'signup' && (
-          <form onSubmit={handleSignUp} className="space-y-3">
+          <form onSubmit={handleInitiateSignUp} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[11px] font-mono text-slate-300">Full Name *</label>
@@ -502,11 +644,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               className="glow-btn w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
             >
               {loading ? (
-                <span>Registering Account...</span>
+                <span>Generating 6-Digit OTP...</span>
               ) : (
                 <>
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Create Account & Register Profile</span>
+                  <KeyRound className="w-4 h-4" />
+                  <span>Send OTP & Verify Account</span>
                 </>
               )}
             </button>

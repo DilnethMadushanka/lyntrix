@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Mail, Lock, Building, Calendar, Phone, Globe, ShieldCheck, X, Sparkles, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { db } from '../services/db';
@@ -82,6 +82,63 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }, 800);
   };
 
+  // Launch Native Google OAuth 2.0 Identity Popup
+  const handleLaunchGoogleOAuth = () => {
+    setError('');
+    setLoading(true);
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '983789548026-llbj7i3v3ub2ut1rakgti26ammqb3quo.apps.googleusercontent.com';
+
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+          callback: (response) => {
+            if (response.access_token) {
+              // Fetch user profile from Google UserInfo API
+              fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${response.access_token}` }
+              })
+                .then(res => res.json())
+                .then(googleProfile => {
+                  setLoading(false);
+                  const user = db.googleAuth({
+                    name: googleProfile.name || googleProfile.email.split('@')[0],
+                    email: googleProfile.email,
+                    company: 'Google Verified Client',
+                    birthday: '1998-05-14',
+                  });
+                  try { confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
+                  onAuthSuccess(user);
+                  onClose();
+                })
+                .catch(() => {
+                  setLoading(false);
+                  setMode('google_prompt');
+                });
+            } else {
+              setLoading(false);
+              setMode('google_prompt');
+            }
+          },
+          error_callback: () => {
+            setLoading(false);
+            setMode('google_prompt');
+          }
+        });
+        client.requestAccessToken();
+      } catch (err) {
+        setLoading(false);
+        setMode('google_prompt');
+      }
+    } else {
+      // Fallback if script loading or popup blocked
+      setLoading(false);
+      setMode('google_prompt');
+    }
+  };
+
   const handleCompleteGoogleAuth = (e) => {
     e.preventDefault();
     setLoading(true);
@@ -132,7 +189,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             <User className="w-6 h-6" />
           </div>
           <h3 className="text-2xl font-extrabold text-white font-['Outfit']">
-            {mode === 'signin' ? 'Client Portal Sign In' : mode === 'signup' ? 'Create Enterprise Account' : 'Google OAuth Sign-In'}
+            {mode === 'signin' ? 'Client Portal Sign In' : mode === 'signup' ? 'Create Enterprise Account' : 'Google OAuth Verification'}
           </h3>
           <p className="text-xs text-slate-400 font-mono">
             {mode === 'signin' ? 'ACCESS YOUR PROJECTS & PROPOSALS' : mode === 'signup' ? 'REGISTER COMPANY PROFILE & SCOPE' : 'GOOGLE SINGLE SIGN-ON VERIFICATION'}
@@ -168,13 +225,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </div>
         )}
 
-        {/* Google SSO Launcher Button (When not in prompt) */}
+        {/* Google SSO Launcher Button */}
         {mode !== 'google_prompt' && (
           <div className="mb-5">
             <button
-              onClick={() => setMode('google_prompt')}
+              onClick={handleLaunchGoogleOAuth}
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 hover:text-white text-xs font-mono font-bold flex items-center justify-center gap-3 transition-colors"
+              className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 hover:text-cyan-300 text-xs font-mono font-bold flex items-center justify-center gap-3 transition-colors shadow-md shadow-slate-950"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -182,7 +239,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
               </svg>
-              <span>Continue with Google Sign-In</span>
+              <span>{loading ? 'Opening Google Identity Window...' : 'Continue with Google Sign-In'}</span>
             </button>
 
             <div className="relative my-4">
@@ -192,7 +249,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </div>
         )}
 
-        {/* Google Identity Selector Flow */}
+        {/* Google Identity Prompt Flow */}
         {mode === 'google_prompt' && (
           <form onSubmit={handleCompleteGoogleAuth} className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-mono space-y-2">
@@ -200,10 +257,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 </svg>
-                <span>Google Workspace Single Sign-On</span>
+                <span>Google Workspace Profile Verification</span>
               </div>
               <p className="text-slate-400">
-                Confirm your Google email and organization profile below to link your account to Cloud DB.
+                Confirm your Google account details to save your identity profile to Cloud DB.
               </p>
             </div>
 
@@ -267,7 +324,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 disabled={loading}
                 className="flex-2 py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
               >
-                {loading ? 'Authenticating with Google...' : 'Authenticate Google SSO & Save to DB'}
+                {loading ? 'Authenticating with Google...' : 'Save Google Account to Cloud DB'}
               </button>
             </div>
           </form>

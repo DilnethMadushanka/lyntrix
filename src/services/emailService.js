@@ -1,9 +1,41 @@
 /**
  * LYNTRIX REAL AUTOMATED EMAIL DISPATCH SERVICE
- * Supports EmailJS / Resend / Cloud REST API for sending real inbox emails.
+ * Supports Direct Google Gmail REST API & EmailJS Cloud REST API for real inbox delivery.
  */
 
 export const emailService = {
+  // Send Real Email using Official Google Gmail REST API Endpoint
+  sendViaGoogleGmailAPI: async (googleAccessToken, toEmail, subject, bodyContent) => {
+    try {
+      const emailLines = [
+        `To: ${toEmail}`,
+        `Subject: ${subject}`,
+        'Content-Type: text/plain; charset=utf-[#utf-8]',
+        'MIME-Version: 1.0',
+        '',
+        bodyContent
+      ];
+      const rawMessage = btoa(unescape(encodeURIComponent(emailLines.join('\r\n'))))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      const res = await fetch('https://gmail.googleapis.com/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${googleAccessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ raw: rawMessage })
+      });
+
+      return res.ok;
+    } catch (e) {
+      console.warn('Google Gmail API Send Failed:', e);
+      return false;
+    }
+  },
+
   // Send Real Order/Proposal Notification to Admin
   sendAdminOrderAlert: async (orderData) => {
     const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;

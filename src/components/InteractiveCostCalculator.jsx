@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calculator, Check, Sparkles, Send, ShieldAlert, Zap, Layers, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { db } from '../services/db';
 
-export default function InteractiveCostCalculator({ onSelectEstimate }) {
+export default function InteractiveCostCalculator({ onSelectEstimate, dbTrigger }) {
   const [serviceType, setServiceType] = useState('software');
   const [scale, setScale] = useState('growth');
   const [cloudEnv, setCloudEnv] = useState('aws');
@@ -10,13 +11,20 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
   const [selectedAddons, setSelectedAddons] = useState(['security_audit', 'ci_cd']);
   const [submitted, setSubmitted] = useState(false);
 
-  const serviceOptions = [
-    { id: 'software', name: 'Custom Software / Web Platform', base: 3500 },
-    { id: 'cloud', name: 'Cloud Migration & Infrastructure', base: 2800 },
-    { id: 'security', name: 'Zero-Trust Cybersecurity Shield', base: 3000 },
-    { id: 'consulting', name: 'IT Strategy & CTO Advisory', base: 2000 },
-    { id: 'support', name: '24/7 Managed IT Infrastructure', base: 1800 },
-  ];
+  // Dynamic DB Prices
+  const [dbServices, setDbServices] = useState(db.getServices());
+  const [dbAddons, setDbAddons] = useState(db.getAddons());
+
+  useEffect(() => {
+    setDbServices(db.getServices());
+    setDbAddons(db.getAddons());
+  }, [dbTrigger]);
+
+  const serviceOptions = dbServices.map(s => ({
+    id: s.id,
+    name: `${s.title} (Base $${s.basePrice.toLocaleString()})`,
+    base: s.basePrice
+  }));
 
   const scaleOptions = [
     { id: 'mvp', name: 'Startup / MVP Scope', multiplier: 1.0, duration: '2-4 Weeks' },
@@ -35,13 +43,6 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
     { id: 'premium', name: '24/7 Managed SOC (<15m SLA)', cost: 800 },
   ];
 
-  const addonsList = [
-    { id: 'security_audit', name: 'Pentest & Security Audit', price: 1200 },
-    { id: 'ci_cd', name: 'Automated CI/CD Pipeline', price: 800 },
-    { id: 'compliance', name: 'ISO 27001 / SOC 2 Prep', price: 1500 },
-    { id: 'ai_module', name: 'AI & Data Integration', price: 1800 },
-  ];
-
   const toggleAddon = (id) => {
     if (selectedAddons.includes(id)) {
       setSelectedAddons(selectedAddons.filter(item => item !== id));
@@ -51,17 +52,17 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
   };
 
   // Calculate Total Estimate
-  const selectedServiceObj = serviceOptions.find(s => s.id === serviceType);
+  const selectedServiceObj = serviceOptions.find(s => s.id === serviceType) || serviceOptions[0];
   const selectedScaleObj = scaleOptions.find(s => s.id === scale);
   const selectedSupportObj = supportOptions.find(s => s.id === supportTier);
 
-  let basePrice = selectedServiceObj ? selectedServiceObj.base : 3000;
-  basePrice *= selectedScaleObj ? selectedScaleObj.multiplier : 1.5;
+  let basePrice = selectedServiceObj ? selectedServiceObj.base : 3500;
+  basePrice *= selectedScaleObj ? selectedScaleObj.multiplier : 1.8;
   if (cloudEnv === 'multicloud') basePrice *= 1.2;
   basePrice += selectedSupportObj ? selectedSupportObj.cost : 0;
 
   const addonsTotal = selectedAddons.reduce((sum, addonId) => {
-    const found = addonsList.find(a => a.id === addonId);
+    const found = dbAddons.find(a => a.id === addonId);
     return sum + (found ? found.price : 0);
   }, 0);
 
@@ -209,7 +210,7 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
                 5. Optional Technical Add-ons
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                {addonsList.map((addon) => {
+                {dbAddons.map((addon) => {
                   const isChecked = selectedAddons.includes(addon.id);
                   return (
                     <button
@@ -261,7 +262,7 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
               <div className="space-y-2 border-t border-slate-800 pt-4 text-xs text-slate-300 font-mono">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Service:</span>
-                  <span className="truncate max-w-[180px]">{selectedServiceObj.name.split('/')[0]}</span>
+                  <span className="truncate max-w-[180px]">{selectedServiceObj.name.split('(')[0]}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Scope:</span>

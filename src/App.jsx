@@ -11,13 +11,14 @@ import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import AdminLoginModal from './components/AdminLoginModal';
 import AdminDashboard from './components/AdminDashboard';
-import { LayoutDashboard, Globe, Lock } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 
 export default function App() {
   const [estimateData, setEstimateData] = useState(null);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [viewMode, setViewMode] = useState('site'); // 'site' or 'admin'
+  const [dbTrigger, setDbTrigger] = useState(0);
 
   const handleSelectEstimate = (data) => {
     setEstimateData(data);
@@ -44,11 +45,16 @@ export default function App() {
     setViewMode('site');
   };
 
+  const triggerDataRefresh = () => {
+    setDbTrigger(prev => prev + 1);
+  };
+
   if (viewMode === 'admin' && isAdminLoggedIn) {
     return (
       <AdminDashboard
         onLogout={handleLogout}
         onReturnToSite={() => setViewMode('site')}
+        onDataUpdated={triggerDataRefresh}
       />
     );
   }
@@ -78,13 +84,13 @@ export default function App() {
 
       <main>
         <Hero onOpenCalculator={handleOpenCalculator} />
-        <ServicesSection />
+        <ServicesSection dbTrigger={dbTrigger} />
         <SolutionsSection />
-        <InteractiveCostCalculator onSelectEstimate={handleSelectEstimate} />
+        <InteractiveCostCalculator onSelectEstimate={handleSelectEstimate} dbTrigger={dbTrigger} />
         <TechStackSection />
         <AboutSection />
         <TestimonialsSection />
-        <ContactSection estimateData={estimateData} />
+        <ContactSection estimateData={estimateData} onInquirySubmitted={triggerDataRefresh} />
       </main>
 
       <Footer

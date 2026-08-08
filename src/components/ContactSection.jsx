@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle2, ShieldCheck, Clock, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { db } from '../services/db';
 
-export default function ContactSection({ estimateData }) {
+export default function ContactSection({ estimateData, onInquirySubmitted }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     service: 'Software Development',
-    budget: 'Medium ($5k - $15k)',
+    budget: '$5,000 - $15,000',
     details: '',
   });
 
@@ -19,7 +20,8 @@ export default function ContactSection({ estimateData }) {
     if (estimateData) {
       setFormData(prev => ({
         ...prev,
-        service: estimateData.service || prev.service,
+        service: estimateData.service ? estimateData.service.split('(')[0].trim() : prev.service,
+        budget: estimateData.estimateRange || prev.budget,
         details: `Pre-configured from Estimator: ${estimateData.service} (${estimateData.scale}). Est. Budget: ${estimateData.estimateRange}.`
       }));
     }
@@ -30,6 +32,23 @@ export default function ContactSection({ estimateData }) {
     setIsSubmitting(true);
 
     setTimeout(() => {
+      // Save lead proposal to Cloud DB!
+      const newLead = {
+        id: `LYN-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || 'N/A',
+        service: formData.service,
+        scale: estimateData ? estimateData.scale : 'Custom Project',
+        budget: formData.budget,
+        status: 'New',
+        date: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        details: formData.details
+      };
+
+      db.addInquiry(newLead);
+      if (onInquirySubmitted) onInquirySubmitted();
+
       setIsSubmitting(false);
       setSubmitted(true);
       try {
@@ -123,9 +142,9 @@ export default function ContactSection({ estimateData }) {
                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/40">
                   <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8" />
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-white font-['Outfit']">Proposal Request Received!</h3>
+                <h3 className="text-xl sm:text-2xl font-bold text-white font-['Outfit']">Proposal Request Saved to Cloud!</h3>
                 <p className="text-slate-300 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-                  Thank you <strong className="text-cyan-400">{formData.name}</strong>. Our senior technical consultant will review your project requirements and reach out at <strong className="text-cyan-400">{formData.email}</strong> within 2 business hours.
+                  Thank you <strong className="text-cyan-400">{formData.name}</strong>. Your project proposal details have been stored securely in our Cloud Database. Our senior consultant will reach out at <strong className="text-cyan-400">{formData.email}</strong> within 2 business hours.
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
@@ -220,7 +239,7 @@ export default function ContactSection({ estimateData }) {
                   {isSubmitting ? (
                     <span className="flex items-center gap-2 font-mono">
                       <span className="w-4 h-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
-                      Sending...
+                      Saving to Cloud Database...
                     </span>
                   ) : (
                     <>
@@ -231,7 +250,7 @@ export default function ContactSection({ estimateData }) {
                 </button>
 
                 <p className="text-[10px] sm:text-[11px] text-slate-400 text-center font-mono">
-                  🔒 All information is protected under standard non-disclosure terms.
+                  🔒 All information is stored in encrypted Cloud DB storage under NDA terms.
                 </p>
 
               </form>

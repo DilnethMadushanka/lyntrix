@@ -2,74 +2,53 @@ import React, { useState } from 'react';
 import { 
   Users, DollarSign, Activity, ShieldCheck, Search, Filter, Plus, 
   Trash2, Edit, CheckCircle2, AlertTriangle, Eye, ArrowLeft, Download, 
-  RefreshCcw, Server, Cpu, Database, Lock, LogOut, Sparkles
+  RefreshCcw, Server, Cpu, Database, Lock, LogOut, Sparkles, Save, Check
 } from 'lucide-react';
+import { db } from '../services/db';
 
-export default function AdminDashboard({ onLogout, onReturnToSite }) {
-  const [activeTab, setActiveTab] = useState('inquiries');
+export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated }) {
+  const [activeTab, setActiveTab] = useState('pricing');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedInquiry, setSelectedInquiry] = useState(null);
 
-  // Mock Lead Proposals Data
-  const [inquiries, setInquiries] = useState([
-    {
-      id: 'LYN-9021',
-      name: 'Dilneth Madushanka',
-      email: 'dilneth@enterprise.io',
-      phone: '+94 77 987 6543',
-      service: 'Software Development',
-      scale: 'Growth Business Platform',
-      budget: '$8,500 - $12,500',
-      status: 'New',
-      date: '2026-08-08 19:42',
-      details: 'Needs modern React + Node.js high concurrency payment dashboard integration with PostgreSQL.'
-    },
-    {
-      id: 'LYN-9020',
-      name: 'Sarah Vance',
-      email: 'sarah.v@aerocloud.com',
-      phone: '+1 415 889 0123',
-      service: 'Cloud Migration & DevOps',
-      scale: 'Enterprise Scale Architecture',
-      budget: '$25,000 - $40,000',
-      status: 'In Review',
-      date: '2026-08-07 14:15',
-      details: 'AWS multi-region failover setup with Terraform IaC declarations and Kubernetes EKS auto-scaling.'
-    },
-    {
-      id: 'LYN-9019',
-      name: 'Dr. Michael Chang',
-      email: 'mchang@omnihealth.org',
-      phone: '+1 650 443 8910',
-      service: 'Cybersecurity Defense',
-      scale: 'Growth Business Platform',
-      budget: '$15,000 - $22,000',
-      status: 'Proposal Sent',
-      date: '2026-08-06 11:30',
-      details: 'SOC 2 Type II readiness audit, Zero-Trust mTLS identity implementation, continuous penetration testing.'
-    },
-    {
-      id: 'LYN-9018',
-      name: 'Elena Rostova',
-      email: 'elena@finpulse.pay',
-      phone: '+44 20 7946 0912',
-      service: '24/7 Managed IT Support',
-      scale: 'Enterprise Scale Architecture',
-      budget: '$18,000 / Mo',
-      status: 'Closed Won',
-      date: '2026-08-05 09:20',
-      details: 'Round-the-clock SOC telemetry monitoring, <15 min critical incident SLA response team.'
-    }
-  ]);
+  // Cloud DB States
+  const [services, setServices] = useState(db.getServices());
+  const [addons, setAddons] = useState(db.getAddons());
+  const [inquiries, setInquiries] = useState(db.getInquiries());
+  const [saveNotice, setSaveNotice] = useState('');
 
   // System Telemetry Logs
   const [logs, setLogs] = useState([
-    { id: 1, time: '20:54:12', level: 'INFO', msg: '[AWS EKS] Pod cluster auto-scaled to 14 nodes. CPU load 34%.' },
-    { id: 2, time: '20:51:04', level: 'SUCCESS', msg: '[Zero-Trust] Admin session authenticated for user admin@lyntrix.tech.' },
+    { id: 1, time: new Date().toLocaleTimeString(), level: 'INFO', msg: '[AWS EKS] Pod cluster auto-scaled to 14 nodes. CPU load 34%.' },
+    { id: 2, time: '20:51:04', level: 'SUCCESS', msg: '[Cloud DB] Authenticated admin session for user admin@lyntrix.tech.' },
     { id: 3, time: '20:48:33', level: 'WARN', msg: '[Cloudflare WAF] Blocked 142 suspicious DDOS requests from origin IP 194.26.x.x.' },
     { id: 4, time: '20:45:00', level: 'INFO', msg: '[PostgreSQL] Automated WAL backup snapshot stored in S3 Encrypted Vault.' },
   ]);
+
+  // Handle Price Change for Services
+  const handleServicePriceChange = (id, newPrice) => {
+    const numericPrice = parseInt(newPrice, 10) || 0;
+    const updated = services.map(s => s.id === id ? { ...s, basePrice: numericPrice } : s);
+    setServices(updated);
+  };
+
+  // Handle Price Change for Addons
+  const handleAddonPriceChange = (id, newPrice) => {
+    const numericPrice = parseInt(newPrice, 10) || 0;
+    const updated = addons.map(a => a.id === id ? { ...a, price: numericPrice } : a);
+    setAddons(updated);
+  };
+
+  // Save All Price Changes to Cloud Database
+  const handleSavePrices = () => {
+    db.saveServices(services);
+    db.saveAddons(addons);
+    if (onDataUpdated) onDataUpdated();
+
+    setSaveNotice('✨ All prices & service configs successfully updated and synced to Cloud DB!');
+    setTimeout(() => setSaveNotice(''), 4000);
+  };
 
   // Filtered Inquiries
   const filteredInquiries = inquiries.filter(item => {
@@ -82,7 +61,9 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
   });
 
   const updateStatus = (id, newStatus) => {
-    setInquiries(inquiries.map(item => item.id === id ? { ...item, status: newStatus } : item));
+    const updated = inquiries.map(item => item.id === id ? { ...item, status: newStatus } : item);
+    setInquiries(updated);
+    db.saveInquiries(updated);
     if (selectedInquiry && selectedInquiry.id === id) {
       setSelectedInquiry({ ...selectedInquiry, status: newStatus });
     }
@@ -90,7 +71,9 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
 
   const deleteInquiry = (id) => {
     if (confirm(`Are you sure you want to delete lead ${id}?`)) {
-      setInquiries(inquiries.filter(item => item.id !== id));
+      const updated = inquiries.filter(item => item.id !== id);
+      setInquiries(updated);
+      db.saveInquiries(updated);
       if (selectedInquiry && selectedInquiry.id === id) setSelectedInquiry(null);
     }
   };
@@ -110,10 +93,10 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-lg text-white font-['Outfit']">LYNTRIX</span>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
-                  ADMIN CONSOLE
+                  CLOUD CONSOLE
                 </span>
               </div>
-              <p className="text-[9px] text-slate-400 font-mono">SOC & LEAD MANAGEMENT PORTAL</p>
+              <p className="text-[9px] text-slate-400 font-mono">LIVE CLOUD DB ADMIN & PRICING CONTROL</p>
             </div>
           </div>
 
@@ -141,6 +124,16 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
       {/* Main Admin Content Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         
+        {saveNotice && (
+          <div className="p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-xs font-mono flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2 font-bold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{saveNotice}</span>
+            </div>
+            <button onClick={() => setSaveNotice('')} className="text-emerald-400 hover:text-white">✕</button>
+          </div>
+        )}
+
         {/* Top Metrics Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
@@ -150,43 +143,55 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
             </div>
             <div className="text-3xl font-extrabold text-white font-['Outfit']">{inquiries.length}</div>
             <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-              <span>+3 new this week</span>
+              <span>Saved in Cloud DB</span>
             </div>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-              <span>EST. PIPELINE</span>
-              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <span>ACTIVE SERVICES</span>
+              <Cpu className="w-4 h-4 text-indigo-400" />
             </div>
-            <div className="text-3xl font-extrabold text-white font-['Outfit']">$145,500</div>
-            <div className="text-[10px] text-slate-400 font-mono">Verified proposals</div>
+            <div className="text-3xl font-extrabold text-white font-['Outfit']">{services.length} Configured</div>
+            <div className="text-[10px] text-slate-400 font-mono">All prices editable</div>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-              <span>TARGET SLA RESPONSE</span>
-              <Activity className="w-4 h-4 text-purple-400" />
+              <span>ADDONS CONFIGURED</span>
+              <Sparkles className="w-4 h-4 text-purple-400" />
             </div>
-            <div className="text-3xl font-extrabold text-purple-400 font-['Outfit']">&lt; 12 mins</div>
-            <div className="text-[10px] text-emerald-400 font-mono">100% SLA Met</div>
+            <div className="text-3xl font-extrabold text-purple-400 font-['Outfit']">{addons.length} Add-ons</div>
+            <div className="text-[10px] text-emerald-400 font-mono">Live in Estimator</div>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-              <span>SOC TELEMETRY</span>
-              <Server className="w-4 h-4 text-emerald-400" />
+              <span>CLOUD DB SYNC</span>
+              <Database className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="text-3xl font-extrabold text-emerald-400 font-['Outfit']">99.99%</div>
+            <div className="text-3xl font-extrabold text-emerald-400 font-['Outfit']">ONLINE</div>
             <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>All Systems Operational</span>
+              <span>Encrypted Storage Active</span>
             </div>
           </div>
         </div>
 
         {/* Console Navigation Tabs */}
         <div className="flex overflow-x-auto pb-2 gap-2 border-b border-slate-800 no-scrollbar">
+          <button
+            onClick={() => setActiveTab('pricing')}
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
+              activeTab === 'pricing'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
+                : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <span>Service & Add-on Price Editor</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('inquiries')}
             className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
@@ -196,7 +201,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Client Proposals & Inquiries ({inquiries.length})</span>
+            <span>Client Proposals & Leads ({inquiries.length})</span>
           </button>
 
           <button
@@ -208,23 +213,112 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
             }`}
           >
             <Activity className="w-4 h-4" />
-            <span>Real-time SOC Telemetry ({logs.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('services')}
-            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
-              activeTab === 'services'
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
-                : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
-            }`}
-          >
-            <Cpu className="w-4 h-4" />
-            <span>Service Base Pricing Config</span>
+            <span>Real-time Telemetry Monitor</span>
           </button>
         </div>
 
-        {/* Tab 1: Inquiries Table */}
+        {/* Tab 1: Pricing Editor (Core Admin Request!) */}
+        {activeTab === 'pricing' && (
+          <div className="space-y-8">
+            
+            {/* Header with Save Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 rounded-2xl border border-slate-800">
+              <div>
+                <h3 className="text-xl font-bold text-white font-['Outfit']">Global Price Management</h3>
+                <p className="text-xs text-slate-400 font-mono mt-1">
+                  Edit baseline service prices and technical add-on rates below. Changes sync instantly across the entire platform.
+                </p>
+              </div>
+              <button
+                onClick={handleSavePrices}
+                className="glow-btn px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 shrink-0"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save All Price Changes to Cloud DB</span>
+              </button>
+            </div>
+
+            {/* Service Base Prices Editor */}
+            <div className="space-y-4">
+              <div className="text-xs font-mono text-cyan-400 uppercase tracking-wider">
+                1. EDIT SERVICE BASE PRICES (USD $)
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {services.map((serv) => (
+                  <div key={serv.id} className="glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white font-['Outfit'] text-base">{serv.title}</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-cyan-400 border border-slate-800">
+                        {serv.badge}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-slate-400">Base Investment (USD $)</label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-2.5 text-slate-400 font-mono text-sm font-bold">$</span>
+                        <input
+                          type="number"
+                          value={serv.basePrice}
+                          onChange={e => handleServicePriceChange(serv.id, e.target.value)}
+                          className="w-full pl-8 pr-4 py-2 rounded-xl bg-slate-950 border border-cyan-500/40 text-emerald-400 font-mono font-bold text-lg focus:border-cyan-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-slate-400 space-y-1 font-mono">
+                      <div><span className="text-slate-500">Architect:</span> {serv.architect}</div>
+                      <div><span className="text-slate-500">SLA Standard:</span> {serv.sla}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Add-ons Prices Editor */}
+            <div className="space-y-4 pt-4 border-t border-slate-800">
+              <div className="text-xs font-mono text-cyan-400 uppercase tracking-wider">
+                2. EDIT ESTIMATOR ADD-ON PRICES (USD $)
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {addons.map((addon) => (
+                  <div key={addon.id} className="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="font-bold text-slate-200 text-sm font-['Outfit']">{addon.name}</div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-mono text-slate-400">Add-on Rate (USD $)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-slate-400 font-mono text-xs font-bold">$</span>
+                        <input
+                          type="number"
+                          value={addon.price}
+                          onChange={e => handleAddonPriceChange(addon.id, e.target.value)}
+                          className="w-full pl-7 pr-3 py-1.5 rounded-lg bg-slate-950 border border-indigo-500/40 text-cyan-300 font-mono font-bold text-sm focus:border-cyan-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Save Trigger */}
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={handleSavePrices}
+                className="glow-btn px-8 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-sm font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/25"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save All Price Changes to Cloud DB</span>
+              </button>
+            </div>
+
+          </div>
+        )}
+
+        {/* Tab 2: Inquiries Table */}
         {activeTab === 'inquiries' && (
           <div className="space-y-4">
             
@@ -339,7 +433,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
           </div>
         )}
 
-        {/* Tab 2: Telemetry Console */}
+        {/* Tab 3: Telemetry Console */}
         {activeTab === 'telemetry' && (
           <div className="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -355,7 +449,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
                 className="px-3 py-1.5 rounded-lg bg-slate-800 text-xs font-mono text-slate-200 hover:text-white border border-slate-700 flex items-center gap-1.5"
               >
                 <RefreshCcw className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Trigger Manual Diagnostic</span>
+                <span>Trigger Diagnostic</span>
               </button>
             </div>
 
@@ -373,32 +467,6 @@ export default function AdminDashboard({ onLogout, onReturnToSite }) {
                   <span className="text-slate-300 leading-relaxed">{log.msg}</span>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Service Baseline Pricing Config */}
-        {activeTab === 'services' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
-              <div className="text-xs font-mono text-cyan-400">SOFTWARE DEVELOPMENT</div>
-              <div className="text-2xl font-bold text-white font-['Outfit']">$3,500 Base</div>
-              <div className="text-xs text-slate-400">Lead Architect: Senior Full-Stack Specialist</div>
-              <div className="pt-2 text-xs text-emerald-400 font-mono">SLA: 99.99% Guaranteed</div>
-            </div>
-
-            <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
-              <div className="text-xs font-mono text-sky-400">CLOUD SOLUTIONS</div>
-              <div className="text-2xl font-bold text-white font-['Outfit']">$2,800 Base</div>
-              <div className="text-xs text-slate-400">Lead Architect: AWS / Azure Principal Engineer</div>
-              <div className="pt-2 text-xs text-emerald-400 font-mono">SLA: Zero Downtime Migration</div>
-            </div>
-
-            <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
-              <div className="text-xs font-mono text-purple-400">CYBERSECURITY DEFENSE</div>
-              <div className="text-2xl font-bold text-white font-['Outfit']">$3,000 Base</div>
-              <div className="text-xs text-slate-400">Lead Architect: Certified CISSP Specialist</div>
-              <div className="pt-2 text-xs text-emerald-400 font-mono">SLA: &lt;15 Mins Incident Response</div>
             </div>
           </div>
         )}

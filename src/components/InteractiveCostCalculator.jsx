@@ -91,10 +91,10 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
   };
 
   return (
-    <section id="calculator" className="py-24 relative bg-slate-900/60 border-y border-slate-800/80">
+    <section id="calculator" className="py-16 sm:py-24 relative bg-slate-900/60 border-y border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3 sm:space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-xs font-mono text-cyan-400">
             <Calculator className="w-3.5 h-3.5" />
             <span>TRANSPARENT ESTIMATION TOOL</span>
@@ -102,34 +102,34 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
           <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-['Outfit']">
             Instant <span className="text-gradient-cyan">Project Estimator</span>
           </h2>
-          <p className="text-slate-400 text-base font-light">
+          <p className="text-slate-400 text-sm sm:text-base font-light">
             Configure your technical requirements below for an instant budget and timeline projection.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
           
           {/* Left Controls Column */}
-          <div className="lg:col-span-8 space-y-8 glass-card p-6 sm:p-8 rounded-2xl border border-slate-800">
+          <div className="lg:col-span-8 space-y-6 sm:space-y-8 glass-card p-5 sm:p-8 rounded-2xl border border-slate-800">
             
             {/* Step 1: Service Type */}
             <div className="space-y-3">
-              <label className="text-xs font-mono uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+              <label className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400 flex items-center gap-2">
                 <span>1. Select Primary Service Area</span>
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 {serviceOptions.map((s) => (
                   <button
                     key={s.id}
                     onClick={() => setServiceType(s.id)}
-                    className={`p-3.5 rounded-xl text-left border transition-all text-sm flex items-center justify-between ${
+                    className={`p-3 sm:p-3.5 rounded-xl text-left border transition-all text-xs sm:text-sm flex items-center justify-between ${
                       serviceType === s.id
                         ? 'bg-cyan-950/60 border-cyan-500/80 text-white shadow-md shadow-cyan-950'
                         : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
                     }`}
                   >
                     <span className="font-medium">{s.name}</span>
-                    {serviceType === s.id && <Check className="w-4 h-4 text-cyan-400" />}
+                    {serviceType === s.id && <Check className="w-4 h-4 text-cyan-400 shrink-0 ml-1" />}
                   </button>
                 ))}
               </div>
@@ -137,31 +137,31 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
 
             {/* Step 2: Scale & Complexity */}
             <div className="space-y-3">
-              <label className="text-xs font-mono uppercase tracking-wider text-cyan-400">
+              <label className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400">
                 2. Project Scale & Complexity
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 {scaleOptions.map((sc) => (
                   <button
                     key={sc.id}
                     onClick={() => setScale(sc.id)}
-                    className={`p-4 rounded-xl text-left border transition-all ${
+                    className={`p-3.5 sm:p-4 rounded-xl text-left border transition-all ${
                       scale === sc.id
                         ? 'bg-cyan-950/60 border-cyan-500/80 text-white'
                         : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
                     }`}
                   >
-                    <div className="font-semibold text-sm">{sc.name}</div>
-                    <div className="text-xs text-slate-400 font-mono mt-1">Est: {sc.duration}</div>
+                    <div className="font-semibold text-xs sm:text-sm">{sc.name}</div>
+                    <div className="text-[10px] sm:text-xs text-slate-400 font-mono mt-1">Est: {sc.duration}</div>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Step 3: Cloud & SLA Support */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-3">
-                <label className="text-xs font-mono uppercase tracking-wider text-cyan-400">
+                <label className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400">
                   3. Cloud Environment
                 </label>
                 <div className="space-y-2">
@@ -169,7 +169,7 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
                     <button
                       key={c.id}
                       onClick={() => setCloudEnv(c.id)}
-                      className={`w-full p-3 rounded-lg text-left text-xs font-mono border transition-all ${
+                      className={`w-full p-2.5 sm:p-3 rounded-lg text-left text-xs font-mono border transition-all ${
                         cloudEnv === c.id
                           ? 'bg-slate-800 border-cyan-500 text-white'
                           : 'bg-slate-950/60 border-slate-800 text-slate-400'
@@ -182,7 +182,7 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
               </div>
 
               <div className="space-y-3">
-                <label className="text-xs font-mono uppercase tracking-wider text-cyan-400">
+                <label className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400">
                   4. Support & SOC SLA
                 </label>
                 <div className="space-y-2">
@@ -190,7 +190,7 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
                     <button
                       key={sp.id}
                       onClick={() => setSupportTier(sp.id)}
-                      className={`w-full p-3 rounded-lg text-left text-xs font-mono border transition-all ${
+                      className={`w-full p-2.5 sm:p-3 rounded-lg text-left text-xs font-mono border transition-all ${
                         supportTier === sp.id
                           ? 'bg-slate-800 border-cyan-500 text-white'
                           : 'bg-slate-950/60 border-slate-800 text-slate-400'
@@ -205,10 +205,10 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
 
             {/* Step 4: Optional Enhancements */}
             <div className="space-y-3">
-              <label className="text-xs font-mono uppercase tracking-wider text-cyan-400">
+              <label className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400">
                 5. Optional Technical Add-ons
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 {addonsList.map((addon) => {
                   const isChecked = selectedAddons.includes(addon.id);
                   return (
@@ -223,9 +223,9 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
                     >
                       <div>
                         <div className="font-medium text-slate-200">{addon.name}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">+${addon.price.toLocaleString()}</div>
+                        <div className="text-[10px] sm:text-[11px] text-slate-400 font-mono">+${addon.price.toLocaleString()}</div>
                       </div>
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ml-2 ${
                         isChecked ? 'bg-indigo-500 border-indigo-400 text-white' : 'border-slate-700'
                       }`}>
                         {isChecked && <Check className="w-3 h-3" />}
@@ -239,29 +239,29 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
           </div>
 
           {/* Right Summary Column */}
-          <div className="lg:col-span-4 sticky top-28 space-y-4">
-            <div className="glass-card p-6 rounded-2xl border border-cyan-500/40 relative overflow-hidden">
+          <div className="lg:col-span-4 lg:sticky lg:top-28 w-full space-y-4">
+            <div className="glass-card p-5 sm:p-6 rounded-2xl border border-cyan-500/40 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
 
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                <span className="text-xs font-mono uppercase text-slate-400">ESTIMATED INVESTMENT</span>
-                <span className="text-xs font-mono text-cyan-400">USD $</span>
+              <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800">
+                <span className="text-[11px] sm:text-xs font-mono uppercase text-slate-400">ESTIMATED INVESTMENT</span>
+                <span className="text-[11px] sm:text-xs font-mono text-cyan-400">USD $</span>
               </div>
 
-              <div className="py-6 text-center space-y-1">
+              <div className="py-4 sm:py-6 text-center space-y-1">
                 <div className="text-xs text-slate-400 font-mono">Projected Budget Range</div>
-                <div className="text-3xl sm:text-4xl font-extrabold text-white font-['Outfit']">
+                <div className="text-2xl sm:text-4xl font-extrabold text-white font-['Outfit'] tracking-tight">
                   ${minEstimate.toLocaleString()} - ${maxEstimate.toLocaleString()}
                 </div>
                 <div className="text-xs font-mono text-emerald-400 pt-1">
-                  Est. Delivery Time: {selectedScaleObj.duration}
+                  Est. Delivery: {selectedScaleObj.duration}
                 </div>
               </div>
 
               <div className="space-y-2 border-t border-slate-800 pt-4 text-xs text-slate-300 font-mono">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Service:</span>
-                  <span>{selectedServiceObj.name.split('/')[0]}</span>
+                  <span className="truncate max-w-[180px]">{selectedServiceObj.name.split('/')[0]}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Scope:</span>
@@ -273,7 +273,7 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
                 </div>
               </div>
 
-              <div className="pt-6">
+              <div className="pt-5 sm:pt-6">
                 {submitted ? (
                   <div className="p-3 bg-emerald-950/60 border border-emerald-500/50 rounded-xl text-center text-xs text-emerald-300 font-mono space-y-1">
                     <div className="font-bold flex items-center justify-center gap-1.5 text-sm">
@@ -285,7 +285,7 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
                 ) : (
                   <button
                     onClick={handleRequestQuote}
-                    className="glow-btn w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
+                    className="glow-btn w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
                   >
                     <span>Lock Estimate & Request Proposal</span>
                     <Send className="w-4 h-4" />
@@ -293,7 +293,7 @@ export default function InteractiveCostCalculator({ onSelectEstimate }) {
                 )}
               </div>
 
-              <p className="text-[10px] text-slate-500 text-center mt-4">
+              <p className="text-[10px] text-slate-500 text-center mt-3 sm:mt-4">
                 * Note: Final scope and pricing are formally validated during our technical discovery session.
               </p>
 

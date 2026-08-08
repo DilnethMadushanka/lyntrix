@@ -62,11 +62,11 @@ export default function SolutionsSection() {
   const current = solutions[activeSolution];
 
   return (
-    <section id="solutions" className="py-24 relative bg-slate-950">
+    <section id="solutions" className="py-16 sm:py-24 relative bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3 sm:space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-cyan-400">
             <Zap className="w-3.5 h-3.5" />
             <span>SOLUTIONS ARCHITECTURE</span>
@@ -74,13 +74,13 @@ export default function SolutionsSection() {
           <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-['Outfit']">
             Engineered for <span className="text-gradient-cyan">Mission-Critical Scale</span>
           </h2>
-          <p className="text-slate-400 text-base font-light">
+          <p className="text-slate-400 text-sm sm:text-base font-light">
             Proven architecture patterns built by senior software and cloud engineers.
           </p>
         </div>
 
         {/* Grid Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
           {solutions.map((sol, idx) => {
             const Icon = sol.icon;
             const isActive = activeSolution === idx;
@@ -88,52 +88,52 @@ export default function SolutionsSection() {
               <button
                 key={idx}
                 onClick={() => setActiveSolution(idx)}
-                className={`p-5 rounded-xl border text-left transition-all ${
+                className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
                   isActive
                     ? 'bg-slate-900 border-cyan-500 shadow-lg shadow-cyan-950/40 text-white'
                     : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
                 }`}
               >
                 <div className={`p-2.5 rounded-lg w-fit mb-3 ${isActive ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-800 text-slate-400'}`}>
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="font-bold text-sm font-['Outfit'] mb-1">{sol.title}</div>
-                <div className="text-xs text-slate-400 line-clamp-2">{sol.subtitle}</div>
+                <div className="font-bold text-xs sm:text-sm font-['Outfit'] mb-1">{sol.title}</div>
+                <div className="text-[11px] sm:text-xs text-slate-400 line-clamp-2">{sol.subtitle}</div>
               </button>
             );
           })}
         </div>
 
         {/* Selected Solution Visualizer */}
-        <div className="glass-card rounded-2xl p-6 sm:p-10 border border-slate-800 relative">
+        <div className="glass-card rounded-2xl p-5 sm:p-8 lg:p-10 border border-slate-800 relative">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            <div className="lg:col-span-7 space-y-6">
+            <div className="lg:col-span-7 space-y-5 sm:space-y-6">
               <div>
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider">FEATURED ARCHITECTURE SOLUTION</span>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 font-['Outfit']">
+                <span className="text-[10px] sm:text-xs font-mono text-cyan-400 uppercase tracking-wider">FEATURED ARCHITECTURE SOLUTION</span>
+                <h3 className="text-xl sm:text-3xl font-extrabold text-white mt-1 font-['Outfit']">
                   {current.title}
                 </h3>
-                <p className="text-slate-300 text-sm sm:text-base mt-2 font-light">
+                <p className="text-slate-300 text-xs sm:text-base mt-2 font-light">
                   {current.subtitle}
                 </p>
               </div>
 
               {/* Metrics Pill Grid */}
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
                 {current.metrics.map((m, i) => (
-                  <span key={i} className="text-xs font-mono px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/50 text-cyan-300">
+                  <span key={i} className="text-[10px] sm:text-xs font-mono px-2.5 sm:px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/50 text-cyan-300">
                     ✨ {m}
                   </span>
                 ))}
               </div>
 
               {/* Architecture Blueprint List */}
-              <div className="space-y-3 pt-2">
-                <div className="text-xs font-mono uppercase text-slate-400">Technical Blueprint Specs</div>
+              <div className="space-y-2.5 sm:space-y-3 pt-2">
+                <div className="text-[11px] sm:text-xs font-mono uppercase text-slate-400">Technical Blueprint Specs</div>
                 <div className="space-y-2">
                   {current.architecture.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3 text-xs sm:text-sm text-slate-200 bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                    <div key={idx} className="flex items-center gap-2.5 text-xs sm:text-sm text-slate-200 bg-slate-900/80 p-2.5 sm:p-3 rounded-lg border border-slate-800">
                       <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
                       <span className="font-mono">{item}</span>
                     </div>
@@ -144,7 +144,7 @@ export default function SolutionsSection() {
               <div className="pt-2">
                 <a
                   href="#contact"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-400 hover:text-cyan-300"
+                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-cyan-400 hover:text-cyan-300"
                 >
                   <span>Schedule Technical Architecture Deep-Dive</span>
                   <ArrowRight className="w-4 h-4" />
@@ -154,35 +154,35 @@ export default function SolutionsSection() {
             </div>
 
             {/* Architecture Diagram Interactive Mockup */}
-            <div className="lg:col-span-5 bg-slate-950 p-6 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="lg:col-span-5 bg-slate-950 p-4 sm:p-6 rounded-xl border border-slate-800 font-mono text-[11px] sm:text-xs text-slate-300 space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
                 <span className="text-slate-400">BLUEPRINT CONSOLE</span>
                 <span className="text-cyan-400">LIVE TOPOLOGY</span>
               </div>
 
-              <div className="space-y-3">
-                <div className="p-3 rounded bg-slate-900 border border-slate-800 flex justify-between items-center">
-                  <span>🌐 Global Cloudflare CDN & WAF</span>
-                  <span className="text-emerald-400">ACTIVE</span>
+              <div className="space-y-2 sm:space-y-3">
+                <div className="p-2.5 sm:p-3 rounded bg-slate-900 border border-slate-800 flex justify-between items-center text-[10px] sm:text-xs">
+                  <span className="truncate mr-2">🌐 Cloudflare CDN & WAF</span>
+                  <span className="text-emerald-400 font-bold shrink-0">ACTIVE</span>
                 </div>
-                <div className="w-0.5 h-3 bg-cyan-500/50 mx-auto" />
-                <div className="p-3 rounded bg-slate-900 border border-cyan-500/40 flex justify-between items-center text-cyan-300">
-                  <span>⚡ Kubernetes Microservices Cluster</span>
-                  <span className="text-emerald-400">AUTO-SCALE</span>
+                <div className="w-0.5 h-2.5 bg-cyan-500/50 mx-auto" />
+                <div className="p-2.5 sm:p-3 rounded bg-slate-900 border border-cyan-500/40 flex justify-between items-center text-cyan-300 text-[10px] sm:text-xs">
+                  <span className="truncate mr-2">⚡ Kubernetes Cluster</span>
+                  <span className="text-emerald-400 font-bold shrink-0">AUTO-SCALE</span>
                 </div>
-                <div className="w-0.5 h-3 bg-cyan-500/50 mx-auto" />
-                <div className="p-3 rounded bg-slate-900 border border-slate-800 flex justify-between items-center">
-                  <span>🛡️ Zero-Trust Identity Guard</span>
-                  <span className="text-emerald-400">ENFORCED</span>
+                <div className="w-0.5 h-2.5 bg-cyan-500/50 mx-auto" />
+                <div className="p-2.5 sm:p-3 rounded bg-slate-900 border border-slate-800 flex justify-between items-center text-[10px] sm:text-xs">
+                  <span className="truncate mr-2">🛡️ Zero-Trust Identity</span>
+                  <span className="text-emerald-400 font-bold shrink-0">ENFORCED</span>
                 </div>
-                <div className="w-0.5 h-3 bg-cyan-500/50 mx-auto" />
-                <div className="p-3 rounded bg-slate-900 border border-slate-800 flex justify-between items-center">
-                  <span>💾 Multi-Region PostgreSQL & Redis</span>
-                  <span className="text-emerald-400">SYNCED</span>
+                <div className="w-0.5 h-2.5 bg-cyan-500/50 mx-auto" />
+                <div className="p-2.5 sm:p-3 rounded bg-slate-900 border border-slate-800 flex justify-between items-center text-[10px] sm:text-xs">
+                  <span className="truncate mr-2">💾 PostgreSQL & Redis</span>
+                  <span className="text-emerald-400 font-bold shrink-0">SYNCED</span>
                 </div>
               </div>
 
-              <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-800">
+              <div className="pt-2 text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-800">
                 🔒 Protected by Lyntrix Enterprise SLA & Automated Security Sentinel.
               </div>
             </div>

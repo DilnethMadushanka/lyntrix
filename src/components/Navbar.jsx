@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Menu, X, ArrowRight, Sparkles, Terminal, Lock, LayoutDashboard, Search } from 'lucide-react';
+import { ShieldCheck, Menu, X, ArrowRight, Sparkles, Terminal, Lock, LayoutDashboard, Search, User, LogOut } from 'lucide-react';
 
-export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLoggedIn, onOpenAdminDashboard, onOpenTracker }) {
+export default function Navbar({ 
+  onOpenCalculator, 
+  onOpenAdminLogin, 
+  isAdminLoggedIn, 
+  onOpenAdminDashboard, 
+  onOpenTracker,
+  onOpenAuth,
+  currentUser,
+  onLogoutUser
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -80,6 +89,27 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
                 <span className="hidden xl:inline">Track Project</span>
               </button>
 
+              {/* User Account Button or Sign In Button */}
+              {currentUser ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono">
+                  <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-[10px] border border-cyan-500/40">
+                    {currentUser.name.charAt(0)}
+                  </div>
+                  <span className="text-white font-semibold max-w-[100px] truncate">{currentUser.name}</span>
+                  <button onClick={onLogoutUser} className="text-slate-400 hover:text-rose-400 ml-1" title="Sign Out">
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={onOpenAuth}
+                  className="flex items-center gap-1.5 text-xs font-mono font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-all"
+                >
+                  <User className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Client Login</span>
+                </button>
+              )}
+
               {isAdminLoggedIn ? (
                 <button
                   onClick={onOpenAdminDashboard}
@@ -105,14 +135,6 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="hidden xl:inline">Estimator</span>
               </button>
-
-              <a
-                href="#contact"
-                className="glow-btn flex items-center gap-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 px-3.5 py-2 rounded-lg transition-all"
-              >
-                <span>Get Proposal</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
             </div>
 
             {/* Mobile Menu Button */}
@@ -152,9 +174,27 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
             </div>
 
             <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-2">
+              {currentUser ? (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs">
+                  <div>
+                    <div className="text-white font-bold">{currentUser.name}</div>
+                    <div className="text-[10px] text-slate-400">{currentUser.email}</div>
+                  </div>
+                  <button onClick={onLogoutUser} className="text-rose-400 hover:underline">Sign Out</button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setMobileMenuOpen(false); onOpenAuth(); }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-950 text-cyan-300 font-mono text-xs border border-cyan-800 font-bold"
+                >
+                  <User className="w-4 h-4 text-cyan-400" />
+                  Client Login / Register
+                </button>
+              )}
+
               <button
                 onClick={() => { setMobileMenuOpen(false); onOpenTracker(); }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-950/60 text-cyan-300 font-mono text-xs border border-cyan-800/60"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-slate-900 text-cyan-300 font-mono text-xs border border-slate-800"
               >
                 <Search className="w-4 h-4 text-cyan-400" />
                 Track Project Status
@@ -174,17 +214,9 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
                   className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-900 text-slate-300 font-mono text-xs border border-slate-800"
                 >
                   <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                  Admin Login (admin@lyntrix.tech)
+                  Admin Login
                 </button>
               )}
-
-              <button
-                onClick={() => { setMobileMenuOpen(false); onOpenCalculator(); }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-slate-800 text-sm font-medium text-slate-200"
-              >
-                <Sparkles className="w-4 h-4 text-cyan-400" />
-                Launch Project Cost Estimator
-              </button>
             </div>
           </div>
         )}

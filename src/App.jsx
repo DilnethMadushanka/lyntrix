@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ServicesSection from './components/ServicesSection';
@@ -14,6 +14,8 @@ import Footer from './components/Footer';
 import AdminLoginModal from './components/AdminLoginModal';
 import AdminDashboard from './components/AdminDashboard';
 import ProjectTrackerModal from './components/ProjectTrackerModal';
+import AuthModal from './components/AuthModal';
+import { db } from './services/db';
 import { LayoutDashboard } from 'lucide-react';
 
 export default function App() {
@@ -21,6 +23,8 @@ export default function App() {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(db.getCurrentUser());
   const [viewMode, setViewMode] = useState('site'); // 'site' or 'admin'
   const [dbTrigger, setDbTrigger] = useState(0);
 
@@ -47,6 +51,16 @@ export default function App() {
   const handleLogout = () => {
     setIsAdminLoggedIn(false);
     setViewMode('site');
+  };
+
+  const handleAuthSuccess = (user) => {
+    setCurrentUser(user);
+    setDbTrigger(prev => prev + 1);
+  };
+
+  const handleLogoutUser = () => {
+    db.logoutUser();
+    setCurrentUser(null);
   };
 
   const triggerDataRefresh = () => {
@@ -85,6 +99,9 @@ export default function App() {
         isAdminLoggedIn={isAdminLoggedIn}
         onOpenAdminDashboard={() => setViewMode('admin')}
         onOpenTracker={() => setIsTrackerOpen(true)}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        currentUser={currentUser}
+        onLogoutUser={handleLogoutUser}
       />
 
       <main>
@@ -111,6 +128,13 @@ export default function App() {
         isOpen={isAdminLoginOpen}
         onClose={() => setIsAdminLoginOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Client User Login / Register Auth Modal */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
       />
 
       {/* Project Status Tracker Modal */}

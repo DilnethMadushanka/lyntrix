@@ -2,21 +2,35 @@ import React, { useState } from 'react';
 import { 
   Users, DollarSign, Activity, ShieldCheck, Search, Filter, Plus, 
   Trash2, Edit, CheckCircle2, AlertTriangle, Eye, ArrowLeft, Download, 
-  RefreshCcw, Server, Cpu, Database, Lock, LogOut, Sparkles, Save, Check
+  RefreshCcw, Server, Cpu, Database, Lock, LogOut, Sparkles, Save, Check,
+  UserPlus, UserCheck, Calendar, Building, Globe, Phone, UserX
 } from 'lucide-react';
 import { db } from '../services/db';
 
 export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated }) {
-  const [activeTab, setActiveTab] = useState('pricing');
+  const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedInquiry, setSelectedInquiry] = useState(null);
+  const [filterRole, setFilterRole] = useState('all');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [newUserModalOpen, setNewUserModalOpen] = useState(false);
 
   // Cloud DB States
+  const [users, setUsers] = useState(db.getUsers());
   const [services, setServices] = useState(db.getServices());
   const [addons, setAddons] = useState(db.getAddons());
   const [inquiries, setInquiries] = useState(db.getInquiries());
   const [saveNotice, setSaveNotice] = useState('');
+
+  // New User Form State
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    email: '',
+    company: '',
+    birthday: '',
+    phone: '',
+    country: 'Sri Lanka',
+    role: 'Client'
+  });
 
   // System Telemetry Logs
   const [logs, setLogs] = useState([
@@ -50,33 +64,66 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
     setTimeout(() => setSaveNotice(''), 4000);
   };
 
+  // User Management Handlers
+  const handleToggleUserStatus = (userId) => {
+    const updated = users.map(u => {
+      if (u.id === userId) {
+        const nextStatus = u.status === 'Active' ? 'Suspended' : 'Active';
+        return { ...u, status: nextStatus };
+      }
+      return u;
+    });
+    setUsers(updated);
+    db.saveUsers(updated);
+  };
+
+  const handleUserRoleChange = (userId, newRole) => {
+    const updated = users.map(u => u.id === userId ? { ...u, role: newRole } : u);
+    setUsers(updated);
+    db.saveUsers(updated);
+  };
+
+  const handleDeleteUser = (userId) => {
+    if (confirm(`Are you sure you want to delete user account ${userId}?`)) {
+      const updated = users.filter(u => u.id !== userId);
+      setUsers(updated);
+      db.saveUsers(updated);
+      if (selectedUser && selectedUser.id === userId) setSelectedUser(null);
+    }
+  };
+
+  const handleCreateNewUser = (e) => {
+    e.preventDefault();
+    try {
+      const created = db.registerUser(newUserData);
+      setUsers(db.getUsers());
+      setNewUserModalOpen(false);
+      setNewUserData({ name: '', email: '', company: '', birthday: '', phone: '', country: 'Sri Lanka', role: 'Client' });
+      setSaveNotice(`✨ New user ${created.name} registered in Cloud DB!`);
+      setTimeout(() => setSaveNotice(''), 4000);
+    } catch (err) {
+      alert(err.message || 'Failed to create user.');
+    }
+  };
+
+  // Filtered Users
+  const filteredUsers = users.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          item.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          item.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = filterRole === 'all' || item.role.toLowerCase().replace(' ', '') === filterRole.toLowerCase().replace(' ', '');
+    return matchesSearch && matchesRole;
+  });
+
   // Filtered Inquiries
   const filteredInquiries = inquiries.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           item.service.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || item.status.toLowerCase().replace(' ', '') === filterStatus.toLowerCase().replace(' ', '');
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
-
-  const updateStatus = (id, newStatus) => {
-    const updated = inquiries.map(item => item.id === id ? { ...item, status: newStatus } : item);
-    setInquiries(updated);
-    db.saveInquiries(updated);
-    if (selectedInquiry && selectedInquiry.id === id) {
-      setSelectedInquiry({ ...selectedInquiry, status: newStatus });
-    }
-  };
-
-  const deleteInquiry = (id) => {
-    if (confirm(`Are you sure you want to delete lead ${id}?`)) {
-      const updated = inquiries.filter(item => item.id !== id);
-      setInquiries(updated);
-      db.saveInquiries(updated);
-      if (selectedInquiry && selectedInquiry.id === id) setSelectedInquiry(null);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans pb-16">
@@ -93,10 +140,10 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-lg text-white font-['Outfit']">LYNTRIX</span>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
-                  CLOUD CONSOLE
+                  ADMIN CONSOLE
                 </span>
               </div>
-              <p className="text-[9px] text-slate-400 font-mono">LIVE CLOUD DB ADMIN & PRICING CONTROL</p>
+              <p className="text-[9px] text-slate-400 font-mono">USER MANAGEMENT & CLOUD PRICING PORTAL</p>
             </div>
           </div>
 
@@ -138,48 +185,62 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-              <span>ACTIVE LEADS</span>
+              <span>REGISTERED USERS</span>
               <Users className="w-4 h-4 text-cyan-400" />
             </div>
-            <div className="text-3xl font-extrabold text-white font-['Outfit']">{inquiries.length}</div>
+            <div className="text-3xl font-extrabold text-white font-['Outfit']">{users.length}</div>
             <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-              <span>Saved in Cloud DB</span>
+              <span>All Active Client Accounts</span>
             </div>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-              <span>ACTIVE SERVICES</span>
-              <Cpu className="w-4 h-4 text-indigo-400" />
+              <span>ACTIVE PROPOSALS</span>
+              <DollarSign className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="text-3xl font-extrabold text-white font-['Outfit']">{services.length} Configured</div>
-            <div className="text-[10px] text-slate-400 font-mono">All prices editable</div>
+            <div className="text-3xl font-extrabold text-white font-['Outfit']">{inquiries.length}</div>
+            <div className="text-[10px] text-slate-400 font-mono">Client inquiries</div>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-              <span>ADDONS CONFIGURED</span>
+              <span>GOOGLE OAUTH USERS</span>
               <Sparkles className="w-4 h-4 text-purple-400" />
             </div>
-            <div className="text-3xl font-extrabold text-purple-400 font-['Outfit']">{addons.length} Add-ons</div>
-            <div className="text-[10px] text-emerald-400 font-mono">Live in Estimator</div>
+            <div className="text-3xl font-extrabold text-purple-400 font-['Outfit']">
+              {users.filter(u => u.authProvider === 'Google').length}
+            </div>
+            <div className="text-[10px] text-emerald-400 font-mono">Google Verified</div>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-              <span>CLOUD DB SYNC</span>
+              <span>CLOUD DB PERSISTENCE</span>
               <Database className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-3xl font-extrabold text-emerald-400 font-['Outfit']">ONLINE</div>
             <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Encrypted Storage Active</span>
+              <span>Encrypted User Storage</span>
             </div>
           </div>
         </div>
 
         {/* Console Navigation Tabs */}
         <div className="flex overflow-x-auto pb-2 gap-2 border-b border-slate-800 no-scrollbar">
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
+              activeTab === 'users'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
+                : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <Users className="w-4 h-4 text-cyan-400" />
+            <span>User Management & Client Profiles ({users.length})</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('pricing')}
             className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
@@ -203,25 +264,145 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
             <Users className="w-4 h-4" />
             <span>Client Proposals & Leads ({inquiries.length})</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab('telemetry')}
-            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
-              activeTab === 'telemetry'
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
-                : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-            <span>Real-time Telemetry Monitor</span>
-          </button>
         </div>
 
-        {/* Tab 1: Pricing Editor (Core Admin Request!) */}
+        {/* TAB: USER MANAGEMENT (New Core Requirement) */}
+        {activeTab === 'users' && (
+          <div className="space-y-4">
+            
+            {/* Search and Add User Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search user by name, email, company, or ID..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={filterRole}
+                  onChange={e => setFilterRole(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 focus:outline-none"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="client">Client</option>
+                  <option value="enterpriseclient">Enterprise Client</option>
+                  <option value="vipclient">VIP Client</option>
+                </select>
+
+                <button
+                  onClick={() => setNewUserModalOpen(true)}
+                  className="glow-btn px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center gap-1.5 shrink-0"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Add New Client Account</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                      <th className="p-4">User ID / Date</th>
+                      <th className="p-4">Client Name & Email</th>
+                      <th className="p-4">Company Name</th>
+                      <th className="p-4">Date of Birth / Founded</th>
+                      <th className="p-4">Auth Provider</th>
+                      <th className="p-4">Role & Status</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 text-xs">
+                    {filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-slate-400 font-mono">
+                          No matching registered users found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((u) => (
+                        <tr key={u.id} className="hover:bg-slate-900/50 transition-colors">
+                          <td className="p-4 font-mono">
+                            <div className="font-bold text-cyan-400">{u.id}</div>
+                            <div className="text-[10px] text-slate-400">{u.joinedDate}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="font-bold text-white font-['Outfit']">{u.name}</div>
+                            <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
+                          </td>
+                          <td className="p-4 font-mono text-slate-300">
+                            {u.company}
+                          </td>
+                          <td className="p-4 font-mono text-slate-400">
+                            {u.birthday}
+                          </td>
+                          <td className="p-4">
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                              u.authProvider === 'Google' ? 'bg-indigo-950 text-indigo-300 border-indigo-800' : 'bg-slate-900 text-slate-300 border-slate-800'
+                            }`}>
+                              {u.authProvider === 'Google' ? 'Google OAuth' : 'Email/Pass'}
+                            </span>
+                          </td>
+                          <td className="p-4 space-y-1">
+                            <select
+                              value={u.role}
+                              onChange={e => handleUserRoleChange(u.id, e.target.value)}
+                              className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-950 border border-slate-800 text-cyan-300 focus:outline-none"
+                            >
+                              <option value="Client">Client</option>
+                              <option value="Enterprise Client">Enterprise Client</option>
+                              <option value="VIP Client">VIP Client</option>
+                            </select>
+
+                            <div>
+                              <button
+                                onClick={() => handleToggleUserStatus(u.id)}
+                                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                                  u.status === 'Active' ? 'bg-emerald-950 text-emerald-400 border-emerald-800' : 'bg-rose-950 text-rose-400 border-rose-800'
+                                }`}
+                              >
+                                {u.status} (Click to toggle)
+                              </button>
+                            </div>
+                          </td>
+                          <td className="p-4 text-right space-x-2">
+                            <button
+                              onClick={() => setSelectedUser(u)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-cyan-400 border border-slate-700 transition-colors"
+                              title="View Full Profile"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-rose-400 border border-slate-700 transition-colors"
+                              title="Delete Account"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB: PRICING EDITOR */}
         {activeTab === 'pricing' && (
           <div className="space-y-8">
-            
-            {/* Header with Save Button */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 rounded-2xl border border-slate-800">
               <div>
                 <h3 className="text-xl font-bold text-white font-['Outfit']">Global Price Management</h3>
@@ -238,12 +419,10 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
               </button>
             </div>
 
-            {/* Service Base Prices Editor */}
             <div className="space-y-4">
               <div className="text-xs font-mono text-cyan-400 uppercase tracking-wider">
                 1. EDIT SERVICE BASE PRICES (USD $)
               </div>
-              
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {services.map((serv) => (
                   <div key={serv.id} className="glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
@@ -266,253 +445,137 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                         />
                       </div>
                     </div>
-
-                    <div className="text-xs text-slate-400 space-y-1 font-mono">
-                      <div><span className="text-slate-500">Architect:</span> {serv.architect}</div>
-                      <div><span className="text-slate-500">SLA Standard:</span> {serv.sla}</div>
-                    </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Add-ons Prices Editor */}
-            <div className="space-y-4 pt-4 border-t border-slate-800">
-              <div className="text-xs font-mono text-cyan-400 uppercase tracking-wider">
-                2. EDIT ESTIMATOR ADD-ON PRICES (USD $)
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {addons.map((addon) => (
-                  <div key={addon.id} className="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
-                    <div className="font-bold text-slate-200 text-sm font-['Outfit']">{addon.name}</div>
-                    
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-mono text-slate-400">Add-on Rate (USD $)</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2 text-slate-400 font-mono text-xs font-bold">$</span>
-                        <input
-                          type="number"
-                          value={addon.price}
-                          onChange={e => handleAddonPriceChange(addon.id, e.target.value)}
-                          className="w-full pl-7 pr-3 py-1.5 rounded-lg bg-slate-950 border border-indigo-500/40 text-cyan-300 font-mono font-bold text-sm focus:border-cyan-400 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bottom Save Trigger */}
-            <div className="flex justify-end pt-4">
-              <button
-                onClick={handleSavePrices}
-                className="glow-btn px-8 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-sm font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/25"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save All Price Changes to Cloud DB</span>
-              </button>
-            </div>
-
           </div>
         )}
 
-        {/* Tab 2: Inquiries Table */}
+        {/* TAB: INQUIRIES */}
         {activeTab === 'inquiries' && (
-          <div className="space-y-4">
-            
-            {/* Search and Filters Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  placeholder="Search by client name, email, ID, or service..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-                <select
-                  value={filterStatus}
-                  onChange={e => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 focus:outline-none"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="new">New</option>
-                  <option value="inreview">In Review</option>
-                  <option value="proposalsent">Proposal Sent</option>
-                  <option value="closedwon">Closed Won</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Inquiries Table */}
-            <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
-                      <th className="p-4">Lead ID / Date</th>
-                      <th className="p-4">Client Contact</th>
-                      <th className="p-4">Service Area</th>
-                      <th className="p-4">Est. Budget</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Actions</th>
+          <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                    <th className="p-4">Lead ID / Date</th>
+                    <th className="p-4">Client Contact</th>
+                    <th className="p-4">Service Area</th>
+                    <th className="p-4">Est. Budget</th>
+                    <th className="p-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/80 text-xs">
+                  {filteredInquiries.map((lead) => (
+                    <tr key={lead.id} className="hover:bg-slate-900/50">
+                      <td className="p-4 font-mono font-bold text-cyan-400">{lead.id}</td>
+                      <td className="p-4"><div className="font-bold text-white">{lead.name}</div><div className="text-[11px] text-slate-400 font-mono">{lead.email}</div></td>
+                      <td className="p-4 text-slate-300 font-mono">{lead.service}</td>
+                      <td className="p-4 font-mono font-bold text-emerald-400">{lead.budget}</td>
+                      <td className="p-4 text-cyan-400 font-mono">{lead.status}</td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/80 text-xs">
-                    {filteredInquiries.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="p-8 text-center text-slate-400 font-mono">
-                          No matching lead inquiries found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredInquiries.map((lead) => (
-                        <tr key={lead.id} className="hover:bg-slate-900/50 transition-colors">
-                          <td className="p-4 font-mono">
-                            <div className="font-bold text-cyan-400">{lead.id}</div>
-                            <div className="text-[10px] text-slate-400">{lead.date}</div>
-                          </td>
-                          <td className="p-4">
-                            <div className="font-bold text-white font-['Outfit']">{lead.name}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">{lead.email}</div>
-                          </td>
-                          <td className="p-4 text-slate-300 font-mono">
-                            {lead.service}
-                          </td>
-                          <td className="p-4 font-mono font-bold text-emerald-400">
-                            {lead.budget}
-                          </td>
-                          <td className="p-4">
-                            <select
-                              value={lead.status}
-                              onChange={e => updateStatus(lead.id, e.target.value)}
-                              className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold border bg-slate-950 focus:outline-none ${
-                                lead.status === 'New' ? 'border-cyan-500/80 text-cyan-400' :
-                                lead.status === 'In Review' ? 'border-amber-500/80 text-amber-400' :
-                                lead.status === 'Proposal Sent' ? 'border-indigo-500/80 text-indigo-400' :
-                                'border-emerald-500/80 text-emerald-400'
-                              }`}
-                            >
-                              <option value="New">New</option>
-                              <option value="In Review">In Review</option>
-                              <option value="Proposal Sent">Proposal Sent</option>
-                              <option value="Closed Won">Closed Won</option>
-                            </select>
-                          </td>
-                          <td className="p-4 text-right space-x-2">
-                            <button
-                              onClick={() => setSelectedInquiry(lead)}
-                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-cyan-400 border border-slate-700 transition-colors"
-                              title="View Full Scope"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => deleteInquiry(lead.id)}
-                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-rose-400 border border-slate-700 transition-colors"
-                              title="Delete Lead"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* Tab 3: Telemetry Console */}
-        {activeTab === 'telemetry' && (
-          <div className="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-xs font-mono text-cyan-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                <span>REAL-TIME TELEMETRY LOG MONITOR</span>
-              </div>
-              <button
-                onClick={() => setLogs([
-                  { id: Date.now(), time: new Date().toLocaleTimeString(), level: 'INFO', msg: '[SOC Alert] Manual telemetry sweep initiated. All node clusters healthy.' },
-                  ...logs
-                ])}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 text-xs font-mono text-slate-200 hover:text-white border border-slate-700 flex items-center gap-1.5"
-              >
-                <RefreshCcw className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Trigger Diagnostic</span>
-              </button>
-            </div>
-
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 font-mono text-xs space-y-2 max-h-96 overflow-y-auto">
-              {logs.map((log) => (
-                <div key={log.id} className="flex items-start gap-3 py-1 border-b border-slate-900">
-                  <span className="text-slate-500 shrink-0">[{log.time}]</span>
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                    log.level === 'SUCCESS' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
-                    log.level === 'WARN' ? 'bg-amber-950 text-amber-400 border border-amber-800' :
-                    'bg-slate-800 text-cyan-400'
-                  }`}>
-                    {log.level}
-                  </span>
-                  <span className="text-slate-300 leading-relaxed">{log.msg}</span>
-                </div>
-              ))}
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
       </main>
 
-      {/* Selected Inquiry Inspection Modal */}
-      {selectedInquiry && (
+      {/* Inspection Modal for User Profile */}
+      {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="glass-card max-w-xl w-full p-6 rounded-2xl border border-cyan-500/40 space-y-4">
+          <div className="glass-card max-w-lg w-full p-6 rounded-2xl border border-cyan-500/40 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <span className="text-xs font-mono text-cyan-400">{selectedInquiry.id}</span>
-                <h3 className="text-xl font-bold text-white font-['Outfit']">{selectedInquiry.name}</h3>
+                <span className="text-xs font-mono text-cyan-400">{selectedUser.id}</span>
+                <h3 className="text-xl font-bold text-white font-['Outfit']">{selectedUser.name}</h3>
               </div>
-              <button
-                onClick={() => setSelectedInquiry(null)}
-                className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
+              <button onClick={() => setSelectedUser(null)} className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white">✕</button>
             </div>
 
-            <div className="space-y-3 text-xs font-mono">
-              <div><span className="text-slate-400">Email:</span> <span className="text-white">{selectedInquiry.email}</span></div>
-              <div><span className="text-slate-400">Phone:</span> <span className="text-white">{selectedInquiry.phone}</span></div>
-              <div><span className="text-slate-400">Service Needed:</span> <span className="text-cyan-400">{selectedInquiry.service}</span></div>
-              <div><span className="text-slate-400">Scale:</span> <span className="text-white">{selectedInquiry.scale}</span></div>
-              <div><span className="text-slate-400">Estimated Budget:</span> <span className="text-emerald-400">{selectedInquiry.budget}</span></div>
-              <div className="pt-2 border-t border-slate-800/80">
-                <span className="text-slate-400 block mb-1">Technical Requirement Scope:</span>
-                <p className="font-sans text-sm text-slate-200 bg-slate-950 p-3 rounded-lg border border-slate-800">
-                  {selectedInquiry.details}
-                </p>
-              </div>
+            <div className="space-y-2.5 text-xs font-mono">
+              <div><span className="text-slate-400">Corporate Email:</span> <span className="text-white">{selectedUser.email}</span></div>
+              <div><span className="text-slate-400">Company Name:</span> <span className="text-cyan-400 font-bold">{selectedUser.company}</span></div>
+              <div><span className="text-slate-400">Date of Birth / Founded:</span> <span className="text-white">{selectedUser.birthday}</span></div>
+              <div><span className="text-slate-400">Phone:</span> <span className="text-white">{selectedUser.phone}</span></div>
+              <div><span className="text-slate-400">Country:</span> <span className="text-white">{selectedUser.country}</span></div>
+              <div><span className="text-slate-400">Auth Method:</span> <span className="text-indigo-400">{selectedUser.authProvider}</span></div>
+              <div><span className="text-slate-400">Account Role:</span> <span className="text-emerald-400 font-bold">{selectedUser.role}</span></div>
             </div>
 
-            <div className="pt-4 flex items-center justify-between border-t border-slate-800">
-              <span className="text-xs font-mono text-slate-400">Status: {selectedInquiry.status}</span>
-              <button
-                onClick={() => setSelectedInquiry(null)}
-                className="px-4 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold text-xs"
-              >
-                Close Details
+            <div className="pt-4 flex justify-end">
+              <button onClick={() => setSelectedUser(null)} className="px-4 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold text-xs font-mono">
+                Close User Profile
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Creating New User */}
+      {newUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="glass-card max-w-lg w-full p-6 rounded-2xl border border-cyan-500/40 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xl font-bold text-white font-['Outfit']">Register New Client Account</h3>
+              <button onClick={() => setNewUserModalOpen(false)} className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleCreateNewUser} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserData.name}
+                    onChange={e => setNewUserData({ ...newUserData, name: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={newUserData.email}
+                    onChange={e => setNewUserData({ ...newUserData, email: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Company Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserData.company}
+                    onChange={e => setNewUserData({ ...newUserData, company: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Date of Birth / Founded *</label>
+                  <input
+                    type="date"
+                    required
+                    value={newUserData.birthday}
+                    onChange={e => setNewUserData({ ...newUserData, birthday: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button type="button" onClick={() => setNewUserModalOpen(false)} className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold font-mono">Create User</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

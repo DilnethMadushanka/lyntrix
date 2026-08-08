@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, Shield, Heart, Terminal, Globe, ExternalLink, Code2 } from 'lucide-react';
+import { ArrowUp, Shield, Heart, Terminal, Globe, ExternalLink, Code2, Lock, LayoutDashboard } from 'lucide-react';
 
-export default function Footer() {
+export default function Footer({ onOpenAdminLogin, isAdminLoggedIn, onOpenAdminDashboard }) {
   const [timeStr, setTimeStr] = useState('');
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function Footer() {
             </div>
 
             {/* Social & Git Repo */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <a
                 href="https://github.com/DilnethMadushanka/lyntrix.git"
                 target="_blank"
@@ -59,16 +59,23 @@ export default function Footer() {
                 <span>GitHub Repo</span>
               </a>
 
-              <a
-                href="#"
-                className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 transition-colors flex items-center gap-1.5 text-xs font-mono"
-                aria-label="LinkedIn"
-              >
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
-                </svg>
-                <span>LinkedIn</span>
-              </a>
+              {isAdminLoggedIn ? (
+                <button
+                  onClick={onOpenAdminDashboard}
+                  className="p-2 rounded-lg bg-cyan-950 text-cyan-300 hover:text-white border border-cyan-800 transition-colors flex items-center gap-1.5 text-xs font-mono font-bold"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Admin Console</span>
+                </button>
+              ) : (
+                <button
+                  onClick={onOpenAdminLogin}
+                  className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-cyan-400 border border-slate-800 transition-colors flex items-center gap-1.5 text-xs font-mono"
+                >
+                  <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Admin Login</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -123,9 +130,11 @@ export default function Footer() {
           <p>© {new Date().getFullYear()} LYNTRIX IT SERVICES. All rights reserved.</p>
 
           <div className="flex items-center gap-6">
+            <button onClick={onOpenAdminLogin} className="hover:text-cyan-400 transition-colors font-mono text-[11px]">
+              Admin Portal
+            </button>
             <a href="#" className="hover:text-slate-200 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-slate-200 transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-slate-200 transition-colors">Security Disclosure</a>
 
             <button
               onClick={scrollToTop}

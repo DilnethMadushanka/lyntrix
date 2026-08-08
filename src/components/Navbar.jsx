@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Menu, X, ArrowRight, Sparkles, Terminal, Lock, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, Menu, X, ArrowRight, Sparkles, Terminal, Lock, LayoutDashboard, Search } from 'lucide-react';
 
-export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLoggedIn, onOpenAdminDashboard }) {
+export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLoggedIn, onOpenAdminDashboard, onOpenTracker }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -16,9 +16,10 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
   const navLinks = [
     { name: 'Services', href: '#services' },
     { name: 'Solutions', href: '#solutions' },
+    { name: 'Case Studies', href: '#case-studies' },
     { name: 'Tech Stack', href: '#tech-stack' },
     { name: 'Estimator', href: '#calculator' },
-    { name: 'About Us', href: '#about' },
+    { name: 'FAQ', href: '#faq' },
     { name: 'Contact', href: '#contact' },
   ];
 
@@ -61,7 +62,7 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
                 <a
                   key={link.name}
                   href={link.href}
-                  className="text-xs xl:text-sm font-medium text-slate-300 hover:text-cyan-400 px-3 py-1.5 rounded-full hover:bg-slate-800/50 transition-all duration-200"
+                  className="text-xs xl:text-sm font-medium text-slate-300 hover:text-cyan-400 px-2.5 py-1 rounded-full hover:bg-slate-800/50 transition-all duration-200"
                 >
                   {link.name}
                 </a>
@@ -69,14 +70,23 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
             </nav>
 
             {/* Right Action Buttons */}
-            <div className="hidden md:flex items-center gap-2.5 shrink-0">
+            <div className="hidden md:flex items-center gap-2 shrink-0">
+              <button
+                onClick={onOpenTracker}
+                className="flex items-center gap-1.5 text-xs font-mono text-cyan-400 px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-all"
+                title="Track Project Status"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Track Project</span>
+              </button>
+
               {isAdminLoggedIn ? (
                 <button
                   onClick={onOpenAdminDashboard}
                   className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 px-3 py-2 rounded-lg bg-cyan-950 border border-cyan-800 hover:bg-cyan-900 transition-all"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Admin Console</span>
+                  <span>Admin</span>
                 </button>
               ) : (
                 <button
@@ -90,11 +100,10 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
 
               <button 
                 onClick={onOpenCalculator}
-                className="flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition-all"
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition-all"
               >
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden lg:inline">Project Estimator</span>
-                <span className="lg:hidden">Estimator</span>
+                <span className="hidden xl:inline">Estimator</span>
               </button>
 
               <a
@@ -143,6 +152,14 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
             </div>
 
             <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-2">
+              <button
+                onClick={() => { setMobileMenuOpen(false); onOpenTracker(); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-950/60 text-cyan-300 font-mono text-xs border border-cyan-800/60"
+              >
+                <Search className="w-4 h-4 text-cyan-400" />
+                Track Project Status
+              </button>
+
               {isAdminLoggedIn ? (
                 <button
                   onClick={() => { setMobileMenuOpen(false); onOpenAdminDashboard(); }}
@@ -168,14 +185,6 @@ export default function Navbar({ onOpenCalculator, onOpenAdminLogin, isAdminLogg
                 <Sparkles className="w-4 h-4 text-cyan-400" />
                 Launch Project Cost Estimator
               </button>
-
-              <a
-                href="#contact"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-400 text-slate-950 font-bold text-sm"
-              >
-                Contact Advisory Team
-              </a>
             </div>
           </div>
         )}

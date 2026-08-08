@@ -3,20 +3,24 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ServicesSection from './components/ServicesSection';
 import SolutionsSection from './components/SolutionsSection';
+import CaseStudiesSection from './components/CaseStudiesSection';
 import InteractiveCostCalculator from './components/InteractiveCostCalculator';
 import TechStackSection from './components/TechStackSection';
 import AboutSection from './components/AboutSection';
 import TestimonialsSection from './components/TestimonialsSection';
+import FAQSection from './components/FAQSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import AdminLoginModal from './components/AdminLoginModal';
 import AdminDashboard from './components/AdminDashboard';
+import ProjectTrackerModal from './components/ProjectTrackerModal';
 import { LayoutDashboard } from 'lucide-react';
 
 export default function App() {
   const [estimateData, setEstimateData] = useState(null);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [viewMode, setViewMode] = useState('site'); // 'site' or 'admin'
   const [dbTrigger, setDbTrigger] = useState(0);
 
@@ -80,16 +84,19 @@ export default function App() {
         onOpenAdminLogin={() => setIsAdminLoginOpen(true)}
         isAdminLoggedIn={isAdminLoggedIn}
         onOpenAdminDashboard={() => setViewMode('admin')}
+        onOpenTracker={() => setIsTrackerOpen(true)}
       />
 
       <main>
-        <Hero onOpenCalculator={handleOpenCalculator} />
+        <Hero onOpenCalculator={handleOpenCalculator} onOpenTracker={() => setIsTrackerOpen(true)} />
         <ServicesSection dbTrigger={dbTrigger} />
         <SolutionsSection />
+        <CaseStudiesSection />
         <InteractiveCostCalculator onSelectEstimate={handleSelectEstimate} dbTrigger={dbTrigger} />
         <TechStackSection />
         <AboutSection />
         <TestimonialsSection />
+        <FAQSection />
         <ContactSection estimateData={estimateData} onInquirySubmitted={triggerDataRefresh} />
       </main>
 
@@ -104,6 +111,12 @@ export default function App() {
         isOpen={isAdminLoginOpen}
         onClose={() => setIsAdminLoginOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Project Status Tracker Modal */}
+      <ProjectTrackerModal
+        isOpen={isTrackerOpen}
+        onClose={() => setIsTrackerOpen(false)}
       />
     </div>
   );

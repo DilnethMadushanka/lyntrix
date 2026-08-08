@@ -1,7 +1,8 @@
 import React from 'react';
 import { ArrowRight, ShieldCheck, Cpu, Cloud, Code, Terminal, CheckCircle2, ChevronRight, Play } from 'lucide-react';
+import LatencyWidget from './LatencyWidget';
 
-export default function Hero({ onOpenCalculator }) {
+export default function Hero({ onOpenCalculator, onOpenTracker }) {
   return (
     <section className="relative pt-28 pb-16 sm:pt-36 sm:pb-24 md:pt-40 md:pb-28 overflow-hidden bg-grid-pattern">
       {/* Glow Effects */}
@@ -140,8 +141,13 @@ export default function Hero({ onOpenCalculator }) {
           </div>
         </div>
 
+        {/* Live Network Latency Diagnostic Bar */}
+        <div className="mt-8">
+          <LatencyWidget />
+        </div>
+
         {/* Live Metrics Grid */}
-        <div className="mt-12 sm:mt-16 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="mt-8 sm:mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="glass-card p-4 sm:p-5 rounded-xl border border-slate-800 text-center">
             <div className="text-2xl sm:text-4xl font-extrabold text-cyan-400 font-['Outfit']">250+</div>
             <div className="text-[10px] sm:text-xs text-slate-400 mt-1 uppercase font-mono tracking-wider">Enterprise Projects</div>

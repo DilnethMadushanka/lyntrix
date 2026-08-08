@@ -31,6 +31,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [pendingUserData, setPendingUserData] = useState(null);
   const [timerSeconds, setTimerSeconds] = useState(110);
+  const [isRealEmailSent, setIsRealEmailSent] = useState(false);
   const otpInputsRef = useRef([]);
 
   const [error, setError] = useState('');
@@ -78,9 +79,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
     setLoading(true);
 
-    // Generate 6-Digit OTP
+    // Generate 6-Digit OTP & Dispatch Email
     const otpResult = await emailService.generateAndSendOTP(email);
     setGeneratedOtp(otpResult.otpCode);
+    setIsRealEmailSent(otpResult.realSent);
     setPendingUserData({
       name,
       email,
@@ -148,11 +150,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
   const handleResendOtp = async () => {
     setError('');
-    const otpResult = await emailService.generateAndSendOTP(pendingUserData ? pendingUserData.email : email);
+    const targetEmail = pendingUserData ? pendingUserData.email : email;
+    const otpResult = await emailService.generateAndSendOTP(targetEmail);
     setGeneratedOtp(otpResult.otpCode);
+    setIsRealEmailSent(otpResult.realSent);
     setTimerSeconds(110);
     setOtpDigits(['', '', '', '', '', '']);
-    alert(`📧 A new 6-digit verification code has been dispatched to ${pendingUserData ? pendingUserData.email : email}.`);
+    alert(`📧 A new 6-digit verification code has been generated for ${targetEmail}.`);
   };
 
   // Google OAuth Flow
@@ -273,7 +277,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </p>
         </div>
 
-        {/* Toggle Mode Buttons (Only when not in OTP or Google flow) */}
+        {/* Toggle Mode Buttons */}
         {mode !== 'google_prompt' && mode !== 'otp_verify' && (
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 mb-6">
             <button
@@ -330,17 +334,29 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         {mode === 'otp_verify' && (
           <form onSubmit={handleVerifyOtp} className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
             
-            <div className="p-4 rounded-xl bg-cyan-950/40 border border-cyan-800/60 text-xs font-mono text-center space-y-1.5">
-              <div className="text-cyan-400 font-bold">Verification Code Sent!</div>
+            <div className="p-4 rounded-xl bg-cyan-950/40 border border-cyan-800/60 text-xs font-mono text-center space-y-2">
+              <div className="text-cyan-400 font-bold">Verification Code Dispatched!</div>
               <div className="text-slate-300">
                 We sent a 6-digit OTP code to <strong className="text-white">{pendingUserData?.email}</strong>.
               </div>
 
-              {/* Simulated Mailbox Notification Banner */}
-              <div className="mt-3 p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-emerald-400 font-bold flex items-center justify-center gap-2">
-                <Mail className="w-3.5 h-3.5" />
-                <span>[SIMULATED MAILBOX] Your OTP Code is: <u className="tracking-widest">{generatedOtp}</u></span>
-              </div>
+              {/* Status Banner */}
+              {isRealEmailSent ? (
+                <div className="mt-3 p-3 rounded-lg bg-emerald-950/80 border border-emerald-500/80 text-[11px] text-emerald-300 font-bold flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Real Email Sent! Please check your Inbox / Spam folder.</span>
+                </div>
+              ) : (
+                <div className="mt-3 p-3 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-emerald-400 font-bold space-y-1">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>[SIMULATED MAILBOX] Your OTP Code is: <u className="tracking-widest font-extrabold text-sm">{generatedOtp}</u></span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-normal">
+                    💡 To send real emails to your Gmail inbox, add your free EmailJS Key to <code className="text-cyan-400">.env</code> file.
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 6 Single-Digit Input Boxes */}

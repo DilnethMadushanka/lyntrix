@@ -17,9 +17,9 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
 
     setTimeout(() => {
       setLoading(false);
-      const isValid = db.validateAdminCredentials(email, password);
-      if (isValid) {
-        onLoginSuccess();
+      const authResult = db.validateAdminCredentials(email, password);
+      if (authResult && authResult.success) {
+        onLoginSuccess(authResult.admin);
         onClose();
         setEmail('');
         setPassword('');

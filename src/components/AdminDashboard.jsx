@@ -19,7 +19,14 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   const [services, setServices] = useState(db.getServices());
   const [addons, setAddons] = useState(db.getAddons());
   const [inquiries, setInquiries] = useState(db.getInquiries());
+  const [admins, setAdmins] = useState(db.getAdmins());
   const [saveNotice, setSaveNotice] = useState('');
+
+  // Admin Management Modal States
+  const [newAdminModalOpen, setNewAdminModalOpen] = useState(false);
+  const [newAdminData, setNewAdminData] = useState({ name: '', email: '', password: '', role: 'Master Admin' });
+  const [editingPasswordAdmin, setEditingPasswordAdmin] = useState(null);
+  const [newPasswordValue, setNewPasswordValue] = useState('');
 
   // New User Form State
   const [newUserData, setNewUserData] = useState({
@@ -103,6 +110,48 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
       setTimeout(() => setSaveNotice(''), 4000);
     } catch (err) {
       alert(err.message || 'Failed to create user.');
+    }
+  };
+
+  // Admin Account Handlers
+  const handleCreateAdmin = (e) => {
+    e.preventDefault();
+    try {
+      const created = db.addAdmin(newAdminData);
+      setAdmins(db.getAdmins());
+      setNewAdminModalOpen(false);
+      setNewAdminData({ name: '', email: '', password: '', role: 'Master Admin' });
+      setSaveNotice(`🔐 New Admin ${created.name} (${created.email}) added to DB!`);
+      setTimeout(() => setSaveNotice(''), 4000);
+    } catch (err) {
+      alert(err.message || 'Failed to add admin.');
+    }
+  };
+
+  const handleUpdateAdminPassword = (e) => {
+    e.preventDefault();
+    if (!newPasswordValue || newPasswordValue.length < 4) {
+      alert('Password must be at least 4 characters long.');
+      return;
+    }
+    db.updateAdminPassword(editingPasswordAdmin.id, newPasswordValue);
+    setAdmins(db.getAdmins());
+    setEditingPasswordAdmin(null);
+    setNewPasswordValue('');
+    setSaveNotice('🔑 Admin password successfully updated in Cloud Database!');
+    setTimeout(() => setSaveNotice(''), 4000);
+  };
+
+  const handleDeleteAdmin = (adminId) => {
+    if (confirm('Are you sure you want to revoke and delete this admin account?')) {
+      try {
+        const updated = db.deleteAdmin(adminId);
+        setAdmins(updated);
+        setSaveNotice('🗑️ Admin account removed from Cloud Database.');
+        setTimeout(() => setSaveNotice(''), 4000);
+      } catch (err) {
+        alert(err.message || 'Failed to delete admin.');
+      }
     }
   };
 
@@ -263,6 +312,18 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
           >
             <Users className="w-4 h-4" />
             <span>Client Proposals & Leads ({inquiries.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('admins')}
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
+              activeTab === 'admins'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
+                : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <Lock className="w-4 h-4 text-cyan-400" />
+            <span>Admin DB Credentials & Access ({admins.length})</span>
           </button>
         </div>
 
@@ -482,6 +543,95 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
           </div>
         )}
 
+        {/* TAB: ADMIN MANAGEMENT & DB CREDENTIALS */}
+        {activeTab === 'admins' && (
+          <div className="space-y-6">
+            
+            {/* Header & Add Admin Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 rounded-2xl border border-slate-800">
+              <div>
+                <h3 className="text-xl font-bold text-white font-['Outfit']">Database Admin Authentication Sentinel</h3>
+                <p className="text-xs text-slate-400 font-mono mt-1">
+                  Manage privileged administrator logins stored in the Cloud Database. Passwords and access rights can be configured below.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setNewAdminModalOpen(true)}
+                className="glow-btn px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Admin to DB</span>
+              </button>
+            </div>
+
+            {/* Admins Table */}
+            <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                      <th className="p-4">Admin ID / Created</th>
+                      <th className="p-4">Admin Name</th>
+                      <th className="p-4">Database Login Email</th>
+                      <th className="p-4">DB Password Status</th>
+                      <th className="p-4">Security Role</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 text-xs">
+                    {admins.map((adm) => (
+                      <tr key={adm.id} className="hover:bg-slate-900/50 transition-colors">
+                        <td className="p-4 font-mono font-bold text-cyan-400">
+                          <div>{adm.id}</div>
+                          <div className="text-[10px] text-slate-400 font-normal">{adm.createdDate}</div>
+                        </td>
+                        <td className="p-4 font-bold text-white font-['Outfit']">
+                          {adm.name}
+                        </td>
+                        <td className="p-4 font-mono text-cyan-300">
+                          {adm.email}
+                        </td>
+                        <td className="p-4 font-mono">
+                          <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[11px]">
+                            •••••••• (Encrypted in DB)
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800 text-[10px] font-mono font-bold">
+                            {adm.role}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingPasswordAdmin(adm);
+                              setNewPasswordValue('');
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono border border-slate-700 transition-colors"
+                          >
+                            Change Password
+                          </button>
+                          {admins.length > 1 && (
+                            <button
+                              onClick={() => handleDeleteAdmin(adm.id)}
+                              className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/60 transition-colors"
+                              title="Delete Admin"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+
       </main>
 
       {/* Inspection Modal for User Profile */}
@@ -574,6 +724,108 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
               <div className="flex justify-end gap-2 pt-3">
                 <button type="button" onClick={() => setNewUserModalOpen(false)} className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400">Cancel</button>
                 <button type="submit" className="px-5 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold font-mono">Create User</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Creating New Admin Account */}
+      {newAdminModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="glass-card max-w-md w-full p-6 rounded-2xl border border-cyan-500/40 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-xl font-bold text-white font-['Outfit']">Add Admin to Cloud DB</h3>
+              <button onClick={() => setNewAdminModalOpen(false)} className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleCreateAdmin} className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-300 font-mono block mb-1">Admin Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Lead Administrator"
+                  value={newAdminData.name}
+                  onChange={e => setNewAdminData({ ...newAdminData, name: e.target.value })}
+                  className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-300 font-mono block mb-1">Login Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. admin@lyntrix.tech"
+                  value={newAdminData.email}
+                  onChange={e => setNewAdminData({ ...newAdminData, email: e.target.value })}
+                  className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-300 font-mono block mb-1">Access Key / Password *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Enter strong password..."
+                  value={newAdminData.password}
+                  onChange={e => setNewAdminData({ ...newAdminData, password: e.target.value })}
+                  className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-300 font-mono block mb-1">Security Role</label>
+                <select
+                  value={newAdminData.role}
+                  onChange={e => setNewAdminData({ ...newAdminData, role: e.target.value })}
+                  className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                >
+                  <option value="Master Admin">Master Admin</option>
+                  <option value="Lead Architect & Admin">Lead Architect & Admin</option>
+                  <option value="Security Officer">Security Officer</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button type="button" onClick={() => setNewAdminModalOpen(false)} className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold font-mono">Save Admin to DB</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Updating Admin Password */}
+      {editingPasswordAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="glass-card max-w-md w-full p-6 rounded-2xl border border-cyan-500/40 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-white font-['Outfit']">Change Admin Password</h3>
+                <p className="text-xs font-mono text-cyan-400">{editingPasswordAdmin.email}</p>
+              </div>
+              <button onClick={() => setEditingPasswordAdmin(null)} className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleUpdateAdminPassword} className="space-y-4 text-xs">
+              <div>
+                <label className="text-slate-300 font-mono block mb-1">New Access Key / Password *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Enter new password (min 4 characters)..."
+                  value={newPasswordValue}
+                  onChange={e => setNewPasswordValue(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setEditingPasswordAdmin(null)} className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400 font-mono">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold font-mono">Update DB Password</button>
               </div>
             </form>
           </div>

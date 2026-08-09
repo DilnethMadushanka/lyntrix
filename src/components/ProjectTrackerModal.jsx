@@ -104,7 +104,7 @@ export default function ProjectTrackerModal({ isOpen, onClose }) {
           </div>
 
           <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between">
-            <span>Demo Tracking IDs: <code className="text-cyan-400">LYN-9021</code>, <code className="text-cyan-400">LYN-9020</code></span>
+            <span>🔒 Enter the unique tracking ID assigned to your technical proposal.</span>
           </div>
         </form>
 

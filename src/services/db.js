@@ -8,8 +8,32 @@ const STORAGE_KEYS = {
   ADDONS: 'lyntrix_cloud_addons',
   INQUIRIES: 'lyntrix_cloud_inquiries',
   USERS: 'lyntrix_cloud_users',
-  CURRENT_USER: 'lyntrix_current_user'
+  CURRENT_USER: 'lyntrix_current_user',
+  ADMINS: 'lyntrix_cloud_admins',
+  CURRENT_ADMIN: 'lyntrix_current_admin'
 };
+
+// Initial Default Admin Accounts in DB
+const DEFAULT_ADMINS = [
+  {
+    id: 'ADM-001',
+    email: 'admin@lyntrix.tech',
+    password: 'admin123',
+    name: 'Super Admin',
+    role: 'Master Admin',
+    createdDate: '2026-08-01',
+    status: 'Active'
+  },
+  {
+    id: 'ADM-002',
+    email: 'dilneth@lyntrix.tech',
+    password: 'admin123',
+    name: 'Dilneth Madushanka',
+    role: 'Lead Architect & Admin',
+    createdDate: '2026-08-01',
+    status: 'Active'
+  }
+];
 
 // Initial Default Services
 const DEFAULT_SERVICES = [
@@ -303,10 +327,99 @@ export const db = {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
   },
 
-  // Validate Admin Credentials
+  // --- Admin DB Management ---
+  getAdmins: () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.ADMINS);
+      return saved ? JSON.parse(saved) : DEFAULT_ADMINS;
+    } catch (e) {
+      return DEFAULT_ADMINS;
+    }
+  },
+
+  saveAdmins: (admins) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(admins));
+    } catch (e) {}
+  },
+
   validateAdminCredentials: (email, password) => {
-    const validEmail = 'admin@lyntrix.tech';
-    const validPassword = 'admin123';
-    return email.trim().toLowerCase() === validEmail && password === validPassword;
+    const admins = db.getAdmins();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    const matched = admins.find(
+      a => a.email.toLowerCase() === cleanEmail && a.password === cleanPass && a.status === 'Active'
+    );
+
+    if (matched) {
+      db.setCurrentAdmin(matched);
+      return { success: true, admin: matched };
+    }
+    return false;
+  },
+
+  addAdmin: (adminData) => {
+    const admins = db.getAdmins();
+    const cleanEmail = adminData.email.trim().toLowerCase();
+
+    if (admins.some(a => a.email.toLowerCase() === cleanEmail)) {
+      throw new Error('An admin account with this email address already exists.');
+    }
+
+    const newAdmin = {
+      id: `ADM-${Math.floor(100 + Math.random() * 900)}`,
+      email: cleanEmail,
+      password: adminData.password || 'admin123',
+      name: adminData.name || 'Cloud Administrator',
+      role: adminData.role || 'System Admin',
+      status: 'Active',
+      createdDate: new Date().toISOString().split('T')[0]
+    };
+
+    const updated = [newAdmin, ...admins];
+    db.saveAdmins(updated);
+    return newAdmin;
+  },
+
+  updateAdminPassword: (adminId, newPassword) => {
+    const admins = db.getAdmins();
+    const updated = admins.map(a => {
+      if (a.id === adminId) {
+        return { ...a, password: newPassword };
+      }
+      return a;
+    });
+    db.saveAdmins(updated);
+    return true;
+  },
+
+  deleteAdmin: (adminId) => {
+    const admins = db.getAdmins();
+    if (admins.length <= 1) {
+      throw new Error('Cannot delete the last remaining admin account.');
+    }
+    const updated = admins.filter(a => a.id !== adminId);
+    db.saveAdmins(updated);
+    return updated;
+  },
+
+  getCurrentAdmin: () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_ADMIN);
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  setCurrentAdmin: (admin) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_ADMIN, JSON.stringify(admin));
+    } catch (e) {}
+  },
+
+  logoutAdmin: () => {
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_ADMIN);
   }
 };

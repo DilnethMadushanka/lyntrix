@@ -4,17 +4,17 @@ import confetti from 'canvas-confetti';
 import { db } from '../services/db';
 import { emailService } from '../services/emailService';
 
-export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'forgot_password', 'otp_verify', 'set_new_password', or 'google_prompt'
+export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'signin', initialEmail = '' }) {
+  const [mode, setMode] = useState(initialMode || 'signin'); // 'signin', 'signup', 'forgot_password', 'otp_verify', 'set_new_password', or 'google_prompt'
   const [otpPurpose, setOtpPurpose] = useState('signup'); // 'signup' or 'forgot_password'
   
   // Sign In States
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginEmail, setLoginEmail] = useState(initialEmail || '');
   const [loginPassword, setLoginPassword] = useState('');
   
   // Sign Up States
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail || '');
   const [password, setPassword] = useState('');
   const [company, setCompany] = useState('');
   const [birthday, setBirthday] = useState('');
@@ -22,10 +22,21 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [country, setCountry] = useState('Sri Lanka');
 
   // Forgot Password / Reset States
-  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotEmail, setForgotEmail] = useState(initialEmail || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetSuccessNotice, setResetSuccessNotice] = useState('');
+
+  // Sync initialMode on modal open
+  useEffect(() => {
+    if (isOpen && initialMode) {
+      setMode(initialMode);
+      if (initialEmail) {
+        setForgotEmail(initialEmail);
+        setLoginEmail(initialEmail);
+      }
+    }
+  }, [isOpen, initialMode, initialEmail]);
 
   // Google SSO Prompt States
   const [googleEmail, setGoogleEmail] = useState('');

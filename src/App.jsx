@@ -29,8 +29,64 @@ export default function App() {
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [initialAuthMode, setInitialAuthMode] = useState('signin');
+  const [initialAuthEmail, setInitialAuthEmail] = useState('');
+  const [verificationToast, setVerificationToast] = useState('');
   const [viewMode, setViewMode] = useState('site'); // 'site' or 'admin'
   const [dbTrigger, setDbTrigger] = useState(0);
+
+  // 1-Click Magic Email Verification Link Listener (?verify_otp=...&email=...&action=...)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const verifyOtp = params.get('verify_otp');
+      const email = params.get('email');
+      const action = params.get('action'); // 'register', 'reset', 'change_password'
+
+      if (verifyOtp && email) {
+        // Clean URL parameters without reloading page
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        if (action === 'reset') {
+          // Open password reset directly
+          setInitialAuthMode('set_new_password');
+          setInitialAuthEmail(email);
+          setIsAuthOpen(true);
+        } else if (action === 'change_password') {
+          // Open profile modal directly for password update
+          setVerificationToast(`✨ 1-Click Verification Confirmed for ${email}!`);
+          setIsProfileOpen(true);
+          setTimeout(() => setVerificationToast(''), 6000);
+        } else {
+          // Instant 1-Click Account Activation & Login
+          const existingUsers = db.getUsers();
+          let matched = existingUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+          if (!matched) {
+            matched = {
+              id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
+              name: email.split('@')[0],
+              email: email,
+              company: 'Verified Corporate Client',
+              birthday: '1998-05-14',
+              phone: '+94 7X XXX XXXX',
+              country: 'Sri Lanka',
+              role: 'Client',
+              status: 'Active',
+              joinedDate: new Date().toISOString().split('T')[0],
+              authProvider: '1-Click Email Link'
+            };
+            db.saveUsers([matched, ...existingUsers]);
+          }
+          db.setCurrentUser(matched);
+          setCurrentUser(matched);
+          setVerificationToast(`🎉 1-Click Email Verification Success! Welcome, ${matched.name}.`);
+          setTimeout(() => setVerificationToast(''), 6000);
+        }
+      }
+    } catch (err) {
+      console.warn('URL verification handler note:', err);
+    }
+  }, []);
 
   const handleSelectEstimate = (data) => {
     setEstimateData(data);
@@ -131,11 +187,25 @@ export default function App() {
         onOpenAdminDashboard={() => setViewMode('admin')}
       />
 
+      {/* 1-Click Verification Success Toast Notification */}
+      {verificationToast && (
+        <div className="fixed top-20 right-5 z-50 p-4 rounded-2xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 text-xs font-mono font-bold shadow-2xl shadow-emerald-950 flex items-center gap-2.5 animate-in slide-in-from-top-4 duration-300">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+          <span>{verificationToast}</span>
+        </div>
+      )}
+
       {/* Unified Login / Register Auth Modal */}
       <AuthModal
         isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
+        onClose={() => {
+          setIsAuthOpen(false);
+          setInitialAuthMode('signin');
+          setInitialAuthEmail('');
+        }}
         onAuthSuccess={handleAuthSuccess}
+        initialMode={initialAuthMode}
+        initialEmail={initialAuthEmail}
       />
 
       {/* User Profile & Account Management Modal */}

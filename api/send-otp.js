@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { toEmail, otpCode, purpose = 'Verification' } = req.body;
+    const { toEmail, otpCode, purpose = 'Verification', origin } = req.body;
 
     if (!toEmail || !otpCode) {
       return res.status(400).json({ error: 'toEmail and otpCode are required' });
@@ -39,16 +39,23 @@ export default async function handler(req, res) {
     const isReset = purpose.toLowerCase().includes('reset') || purpose.toLowerCase().includes('forgot');
     const isChange = purpose.toLowerCase().includes('change');
 
+    let actionType = 'register';
     let titleText = '🔐 2FA Identity Verification';
-    let descText = 'Thank you for registering with Lyntrix IT Services. Use the 6-digit one-time security code below to activate and verify your corporate identity:';
+    let descText = 'Use the 6-digit OTP code below, OR click the 1-Click Instant Verification button to automatically verify your corporate account:';
 
     if (isReset) {
+      actionType = 'reset';
       titleText = '🔑 Password Reset Request';
-      descText = 'We received a request to reset your Lyntrix corporate account password. Enter the 6-digit security code below to authorize this password reset:';
+      descText = 'Use the 6-digit OTP code below, OR click the 1-Click Verification button to authorize your password reset:';
     } else if (isChange) {
+      actionType = 'change_password';
       titleText = '🛡️ Password Change Verification';
-      descText = 'A request was made from your client dashboard to update your account password. Enter the 6-digit authorization code below to confirm this security change:';
+      descText = 'Use the 6-digit OTP code below, OR click the button below to confirm your password change:';
     }
+
+    // Build 1-Click Verification URL
+    const siteUrl = origin || process.env.SITE_URL || 'https://dilnethmadushanka.online';
+    const verifyLink = `${siteUrl}/?verify_otp=${otpCode}&email=${encodeURIComponent(toEmail)}&action=${actionType}`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -101,18 +108,29 @@ export default async function handler(req, res) {
                         ${titleText}
                       </h2>
 
-                      <p style="margin: 0 0 25px 0; color: #94A3B8; font-size: 13px; line-height: 1.6;">
+                      <p style="margin: 0 0 20px 0; color: #94A3B8; font-size: 13px; line-height: 1.6;">
                         ${descText}
                       </p>
 
-                      <!-- Glowing OTP Box -->
-                      <div style="margin: 0 auto 25px auto; background: linear-gradient(135deg, rgba(0, 240, 255, 0.12) 0%, rgba(59, 130, 246, 0.12) 100%); border: 2px dashed #00F0FF; border-radius: 14px; padding: 18px 25px; display: inline-block;">
-                        <span style="font-family: 'Courier New', monospace; font-size: 40px; font-weight: 900; letter-spacing: 12px; color: #00F0FF; text-shadow: 0 0 20px rgba(0, 240, 255, 0.6); display: block; margin-left: 12px;">
+                      <!-- Option 1: Glowing OTP Box -->
+                      <div style="margin: 0 auto 20px auto; background: linear-gradient(135deg, rgba(0, 240, 255, 0.12) 0%, rgba(59, 130, 246, 0.12) 100%); border: 2px dashed #00F0FF; border-radius: 14px; padding: 16px 25px; display: inline-block;">
+                        <span style="font-family: 'Courier New', monospace; font-size: 38px; font-weight: 900; letter-spacing: 12px; color: #00F0FF; text-shadow: 0 0 20px rgba(0, 240, 255, 0.6); display: block; margin-left: 12px;">
                           ${otpCode}
                         </span>
                       </div>
 
-                      <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(51, 65, 85, 0.6); border-radius: 10px; padding: 12px; margin-top: 10px;">
+                      <div style="margin: 0 0 20px 0;">
+                        <span style="color: #64748B; font-size: 11px; font-family: 'Courier New', monospace;">— OR USE 1-CLICK INSTANT VERIFY LINK —</span>
+                      </div>
+
+                      <!-- Option 2: 1-Click Verification Action Button -->
+                      <div style="margin-bottom: 25px;">
+                        <a href="${verifyLink}" target="_blank" style="display: inline-block; background: linear-gradient(90deg, #00F0FF 0%, #3B82F6 100%); color: #07090E; font-size: 13px; font-weight: 800; font-family: 'Courier New', monospace; text-decoration: none; padding: 14px 28px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 240, 255, 0.35); text-transform: uppercase; letter-spacing: 1px;">
+                          ⚡ 1-Click Instant Verify & Continue →
+                        </a>
+                      </div>
+
+                      <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(51, 65, 85, 0.6); border-radius: 10px; padding: 12px;">
                         <table width="100%" border="0" cellspacing="0" cellpadding="0">
                           <tr>
                             <td align="left" style="color: #64748B; font-size: 11px; font-family: 'Courier New', monospace;">
@@ -169,6 +187,7 @@ export default async function handler(req, res) {
       success: true,
       messageId: info.messageId,
       toEmail,
+      verifyLink,
       timestamp: new Date().toLocaleTimeString()
     });
   } catch (err) {

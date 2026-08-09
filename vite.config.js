@@ -14,7 +14,7 @@ function nodemailerDevServer() {
           req.on('end', async () => {
             try {
               const parsed = JSON.parse(body || '{}');
-              const { toEmail, otpCode, purpose = 'Verification' } = parsed;
+              const { toEmail, otpCode, purpose = 'Verification', origin } = parsed;
 
               const env = loadEnv('', process.cwd(), '');
               const gmailUser = env.GMAIL_USER || env.VITE_GMAIL_USER || 'madsruzza@gmail.com';
@@ -28,16 +28,22 @@ function nodemailerDevServer() {
               const isReset = purpose.toLowerCase().includes('reset') || purpose.toLowerCase().includes('forgot');
               const isChange = purpose.toLowerCase().includes('change');
 
+              let actionType = 'register';
               let titleText = '🔐 2FA Identity Verification';
-              let descText = 'Thank you for registering with Lyntrix IT Services. Use the 6-digit one-time security code below to activate and verify your corporate identity:';
+              let descText = 'Use the 6-digit OTP code below, OR click the 1-Click Instant Verification button to automatically verify your corporate account:';
 
               if (isReset) {
+                actionType = 'reset';
                 titleText = '🔑 Password Reset Request';
-                descText = 'We received a request to reset your Lyntrix corporate account password. Enter the 6-digit security code below to authorize this password reset:';
+                descText = 'Use the 6-digit OTP code below, OR click the 1-Click Verification button to authorize your password reset:';
               } else if (isChange) {
+                actionType = 'change_password';
                 titleText = '🛡️ Password Change Verification';
-                descText = 'A request was made from your client dashboard to update your account password. Enter the 6-digit authorization code below to confirm this security change:';
+                descText = 'Use the 6-digit OTP code below, OR click the button below to confirm your password change:';
               }
+
+              const siteUrl = origin || 'http://localhost:3000';
+              const verifyLink = `${siteUrl}/?verify_otp=${otpCode}&email=${encodeURIComponent(toEmail)}&action=${actionType}`;
 
               const htmlContent = `
                 <!DOCTYPE html>
@@ -60,10 +66,22 @@ function nodemailerDevServer() {
                             <td style="padding: 10px 40px 30px 40px;">
                               <div style="background: #0E1524; border: 1px solid #1E293B; border-radius: 16px; padding: 30px 25px; text-align: center;">
                                 <h2 style="margin: 0 0 10px 0; color: #FFFFFF; font-size: 20px;">${titleText}</h2>
-                                <p style="margin: 0 0 25px 0; color: #94A3B8; font-size: 13px; line-height: 1.6;">${descText}</p>
-                                <div style="margin: 0 auto 20px auto; background: rgba(0, 240, 255, 0.1); border: 2px dashed #00F0FF; border-radius: 14px; padding: 18px 25px; display: inline-block;">
+                                <p style="margin: 0 0 20px 0; color: #94A3B8; font-size: 13px; line-height: 1.6;">${descText}</p>
+                                
+                                <div style="margin: 0 auto 15px auto; background: rgba(0, 240, 255, 0.1); border: 2px dashed #00F0FF; border-radius: 14px; padding: 16px 25px; display: inline-block;">
                                   <span style="font-family: monospace; font-size: 38px; font-weight: 900; letter-spacing: 12px; color: #00F0FF; display: block; margin-left: 12px;">${otpCode}</span>
                                 </div>
+
+                                <div style="margin: 0 0 15px 0;">
+                                  <span style="color: #64748B; font-size: 11px; font-family: monospace;">— OR CLICK LINK TO VERIFY DIRECTLY —</span>
+                                </div>
+
+                                <div style="margin-bottom: 20px;">
+                                  <a href="${verifyLink}" target="_blank" style="display: inline-block; background: linear-gradient(90deg, #00F0FF 0%, #3B82F6 100%); color: #07090E; font-size: 13px; font-weight: 800; font-family: monospace; text-decoration: none; padding: 14px 28px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 240, 255, 0.35); text-transform: uppercase;">
+                                    ⚡ 1-Click Instant Verify & Continue →
+                                  </a>
+                                </div>
+
                                 <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(51, 65, 85, 0.6); border-radius: 10px; padding: 10px; font-size: 11px; font-family: monospace; color: #64748B;">
                                   ⏱️ Valid for: <strong style="color: #E2E8F0;">2 Minutes</strong> • Recipient: <strong style="color: #00F0FF;">${toEmail}</strong>
                                 </div>

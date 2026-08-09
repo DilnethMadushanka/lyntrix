@@ -110,7 +110,8 @@ export const emailService = {
         body: JSON.stringify({
           toEmail: userEmail,
           otpCode,
-          purpose
+          purpose,
+          origin: typeof window !== 'undefined' ? window.location.origin : 'https://dilnethmadushanka.online'
         })
       });
 

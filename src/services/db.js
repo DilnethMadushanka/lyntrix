@@ -301,6 +301,43 @@ export const db = {
     return found;
   },
 
+  updateUserPassword: (email, newPassword) => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Check if email belongs to an Admin in Cloud DB
+    const admins = db.getAdmins();
+    const adminIndex = admins.findIndex(a => a.email.toLowerCase() === cleanEmail);
+    if (adminIndex !== -1) {
+      admins[adminIndex].password = newPassword;
+      db.saveAdmins(admins);
+      return { success: true, type: 'admin', user: admins[adminIndex] };
+    }
+
+    // 2. Check if email belongs to a regular Client in Cloud DB
+    const users = db.getUsers();
+    const userIndex = users.findIndex(u => u.email.toLowerCase() === cleanEmail);
+    if (userIndex !== -1) {
+      users[userIndex].password = newPassword;
+      db.saveUsers(users);
+      return { success: true, type: 'client', user: users[userIndex] };
+    }
+
+    // If account doesn't exist yet, register new credentials
+    const newUser = {
+      id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: cleanEmail.split('@')[0],
+      email: cleanEmail,
+      password: newPassword,
+      company: 'Corporate Client',
+      role: 'Client',
+      status: 'Active',
+      joinedDate: new Date().toISOString().split('T')[0],
+      authProvider: 'Email'
+    };
+    db.saveUsers([newUser, ...users]);
+    return { success: true, type: 'client', user: newUser };
+  },
+
   googleAuth: (googleProfile) => {
     const users = db.getUsers();
     let found = users.find(u => u.email.toLowerCase() === googleProfile.email.toLowerCase());

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Mail, Lock, Building, Calendar, Phone, Globe, ShieldCheck, X, Sparkles, AlertCircle, ArrowRight, CheckCircle2, KeyRound, RefreshCw } from 'lucide-react';
+import { User, Mail, Lock, Building, Calendar, Phone, Globe, ShieldCheck, X, Sparkles, AlertCircle, ArrowRight, CheckCircle2, KeyRound, RefreshCw, Key } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { db } from '../services/db';
 import { emailService } from '../services/emailService';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'google_prompt', or 'otp_verify'
+  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'forgot_password', 'otp_verify', 'set_new_password', or 'google_prompt'
+  const [otpPurpose, setOtpPurpose] = useState('signup'); // 'signup' or 'forgot_password'
   
   // Sign In States
   const [loginEmail, setLoginEmail] = useState('');
@@ -19,6 +20,12 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [birthday, setBirthday] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('Sri Lanka');
+
+  // Forgot Password / Reset States
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetSuccessNotice, setResetSuccessNotice] = useState('');
 
   // Google SSO Prompt States
   const [googleEmail, setGoogleEmail] = useState('');
@@ -48,9 +55,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
   if (!isOpen) return null;
 
+  // Handle Standard Sign In
   const handleSignIn = (e) => {
     e.preventDefault();
     setError('');
+    setResetSuccessNotice('');
     setLoading(true);
 
     setTimeout(() => {
@@ -102,6 +111,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     const otpResult = await emailService.generateAndSendOTP(email);
     setGeneratedOtp(otpResult.otpCode);
     setIsRealEmailSent(otpResult.realSent);
+    setOtpPurpose('signup');
     setPendingUserData({
       name,
       email,
@@ -110,6 +120,32 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       phone,
       country,
       authProvider: 'Email'
+    });
+    setTimerSeconds(110);
+    setOtpDigits(['', '', '', '', '', '']);
+    setLoading(false);
+    setMode('otp_verify');
+  };
+
+  // Initiate Forgot Password with OTP Verification
+  const handleInitiateForgotPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!forgotEmail) {
+      setError('Please enter your corporate email address.');
+      return;
+    }
+
+    setLoading(true);
+
+    // Generate 6-Digit OTP & Dispatch Email
+    const otpResult = await emailService.generateAndSendOTP(forgotEmail);
+    setGeneratedOtp(otpResult.otpCode);
+    setIsRealEmailSent(otpResult.realSent);
+    setOtpPurpose('forgot_password');
+    setPendingUserData({
+      email: forgotEmail
     });
     setTimerSeconds(110);
     setOtpDigits(['', '', '', '', '', '']);
@@ -153,23 +189,67 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
 
     setLoading(true);
+
+    setTimeout(() => {
+      setLoading(false);
+
+      if (otpPurpose === 'forgot_password') {
+        // Transition to Set New Password screen
+        setMode('set_new_password');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        // Regular Registration
+        try {
+          const newUser = db.registerUser(pendingUserData);
+          try { confetti({ particleCount: 110, spread: 85, origin: { y: 0.6 } }); } catch (err) {}
+          onAuthSuccess(newUser, false);
+          onClose();
+        } catch (err) {
+          setError(err.message || 'Registration failed.');
+        }
+      }
+    }, 600);
+  };
+
+  // Handle Set New Password Submission
+  const handleSetNewPassword = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match. Please re-enter.');
+      return;
+    }
+
+    setLoading(true);
+
     setTimeout(() => {
       try {
-        const newUser = db.registerUser(pendingUserData);
+        const targetEmail = forgotEmail || pendingUserData?.email;
+        db.updateUserPassword(targetEmail, newPassword);
         setLoading(false);
-        try { confetti({ particleCount: 110, spread: 85, origin: { y: 0.6 } }); } catch (err) {}
-        onAuthSuccess(newUser);
-        onClose();
+        try { confetti({ particleCount: 100, spread: 75, origin: { y: 0.6 } }); } catch (err) {}
+        
+        setResetSuccessNotice('🎉 Password successfully updated! You can now sign in with your new password.');
+        setLoginEmail(targetEmail);
+        setLoginPassword('');
+        setMode('signin');
       } catch (err) {
         setLoading(false);
-        setError(err.message || 'Registration failed.');
+        setError(err.message || 'Failed to update password.');
       }
     }, 600);
   };
 
   const handleResendOtp = async () => {
     setError('');
-    const targetEmail = pendingUserData ? pendingUserData.email : email;
+    const targetEmail = pendingUserData ? pendingUserData.email : forgotEmail || email;
     const otpResult = await emailService.generateAndSendOTP(targetEmail);
     setGeneratedOtp(otpResult.otpCode);
     setIsRealEmailSent(otpResult.realSent);
@@ -205,7 +285,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     birthday: '1998-05-14',
                   });
                   try { confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
-                  onAuthSuccess(user);
+                  onAuthSuccess(user, false);
                   onClose();
                 })
                 .catch(() => {
@@ -254,7 +334,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         const user = db.googleAuth(googleProfile);
         setLoading(false);
         try { confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
-        onAuthSuccess(user);
+        onAuthSuccess(user, false);
         onClose();
       } catch (err) {
         setLoading(false);
@@ -280,27 +360,33 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         {/* Modal Header */}
         <div className="text-center space-y-2 mb-6">
           <div className="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto border border-cyan-500/30">
-            {mode === 'otp_verify' ? <KeyRound className="w-6 h-6" /> : <User className="w-6 h-6" />}
+            {mode === 'otp_verify' ? <KeyRound className="w-6 h-6" /> :
+             mode === 'forgot_password' || mode === 'set_new_password' ? <Key className="w-6 h-6" /> :
+             <User className="w-6 h-6" />}
           </div>
           <h3 className="text-2xl font-extrabold text-white font-['Outfit']">
             {mode === 'signin' ? 'Client Portal Sign In' :
              mode === 'signup' ? 'Create Enterprise Account' :
+             mode === 'forgot_password' ? 'Account Recovery' :
              mode === 'otp_verify' ? '2FA Email Verification' :
+             mode === 'set_new_password' ? 'Set New Secure Password' :
              'Google OAuth Verification'}
           </h3>
           <p className="text-xs text-slate-400 font-mono">
             {mode === 'signin' ? 'ACCESS YOUR PROJECTS & PROPOSALS' :
              mode === 'signup' ? 'REGISTER COMPANY PROFILE & SCOPE' :
+             mode === 'forgot_password' ? 'ENTER CORPORATE EMAIL FOR 6-DIGIT OTP' :
              mode === 'otp_verify' ? 'ENTER 6-DIGIT CODE SENT TO YOUR EMAIL' :
+             mode === 'set_new_password' ? 'CREATE A NEW ACCESS PASSWORD' :
              'GOOGLE SINGLE SIGN-ON VERIFICATION'}
           </p>
         </div>
 
-        {/* Toggle Mode Buttons */}
-        {mode !== 'google_prompt' && mode !== 'otp_verify' && (
+        {/* Toggle Mode Buttons (Only shown for signin / signup) */}
+        {(mode === 'signin' || mode === 'signup') && (
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 mb-6">
             <button
-              onClick={() => { setMode('signin'); setError(''); }}
+              onClick={() => { setMode('signin'); setError(''); setResetSuccessNotice(''); }}
               className={`flex-1 py-2 text-xs font-mono rounded-lg transition-all ${
                 mode === 'signin' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-800' : 'text-slate-400 hover:text-white'
               }`}
@@ -308,13 +394,21 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               Sign In
             </button>
             <button
-              onClick={() => { setMode('signup'); setError(''); }}
+              onClick={() => { setMode('signup'); setError(''); setResetSuccessNotice(''); }}
               className={`flex-1 py-2 text-xs font-mono rounded-lg transition-all ${
                 mode === 'signup' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-800' : 'text-slate-400 hover:text-white'
               }`}
             >
               Register Company
             </button>
+          </div>
+        )}
+
+        {/* Success Notice Banner */}
+        {resetSuccessNotice && (
+          <div className="mb-4 p-3 rounded-lg bg-emerald-950/80 border border-emerald-500/70 text-emerald-300 text-xs font-mono flex items-center gap-2 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            <span>{resetSuccessNotice}</span>
           </div>
         )}
 
@@ -325,8 +419,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </div>
         )}
 
-        {/* Google SSO Launcher Button */}
-        {mode !== 'google_prompt' && mode !== 'otp_verify' && (
+        {/* Google SSO Launcher Button (Only for signin / signup) */}
+        {(mode === 'signin' || mode === 'signup') && (
           <div className="mb-5">
             <button
               onClick={handleLaunchGoogleOAuth}
@@ -349,6 +443,53 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </div>
         )}
 
+        {/* FORGOT PASSWORD FORM (Enter Email) */}
+        {mode === 'forgot_password' && (
+          <form onSubmit={handleInitiateForgotPassword} className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono space-y-1.5">
+              <div className="text-cyan-400 font-bold flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                <span>Password Reset Verification</span>
+              </div>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                Enter your registered corporate email address below. We will send a secure 6-digit OTP code to verify your identity.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-mono text-slate-300">Corporate Email Address *</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. name@company.com"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setMode('signin'); setError(''); }}
+                className="flex-1 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs font-bold hover:bg-slate-800 transition-colors"
+              >
+                Back to Sign In
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-2 py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
+              >
+                {loading ? 'Sending Code...' : 'Send 6-Digit OTP Code'}
+              </button>
+            </div>
+          </form>
+        )}
+
         {/* 6-DIGIT OTP VERIFICATION SCREEN */}
         {mode === 'otp_verify' && (
           <form onSubmit={handleVerifyOtp} className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
@@ -356,7 +497,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             <div className="p-4 rounded-xl bg-cyan-950/40 border border-cyan-800/60 text-xs font-mono text-center space-y-2">
               <div className="text-cyan-400 font-bold">Verification Code Dispatched!</div>
               <div className="text-slate-300">
-                We sent a 6-digit OTP code to <strong className="text-white">{pendingUserData?.email}</strong>.
+                We sent a 6-digit OTP code to <strong className="text-white">{pendingUserData?.email || forgotEmail || email}</strong>.
               </div>
 
               {/* Status Banner */}
@@ -409,8 +550,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             <div className="pt-2 flex gap-2">
               <button
                 type="button"
-                onClick={() => setMode('signup')}
-                className="flex-1 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs font-bold"
+                onClick={() => {
+                  setMode(otpPurpose === 'forgot_password' ? 'forgot_password' : 'signup');
+                  setError('');
+                }}
+                className="flex-1 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs font-bold hover:bg-slate-800 transition-colors"
               >
                 Back
               </button>
@@ -419,10 +563,63 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 disabled={loading}
                 className="flex-2 py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
               >
-                {loading ? 'Verifying Code...' : 'Verify OTP & Activate Account'}
+                {loading ? 'Verifying Code...' : otpPurpose === 'forgot_password' ? 'Verify & Reset Password' : 'Verify OTP & Activate Account'}
               </button>
             </div>
 
+          </form>
+        )}
+
+        {/* SET NEW PASSWORD SCREEN (After OTP Verified) */}
+        {mode === 'set_new_password' && (
+          <form onSubmit={handleSetNewPassword} className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs font-mono space-y-1">
+              <div className="text-emerald-400 font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Identity Verified!</span>
+              </div>
+              <p className="text-slate-300 text-[11px]">
+                Create a new secure password for <strong className="text-white">{forgotEmail || pendingUserData?.email}</strong>.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-mono text-slate-300">New Password *</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                <input
+                  type="password"
+                  required
+                  placeholder="Enter min 6 characters..."
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-mono text-slate-300">Confirm New Password *</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                <input
+                  type="password"
+                  required
+                  placeholder="Re-enter new password..."
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="glow-btn w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 mt-2"
+            >
+              {loading ? 'Updating Password...' : 'Save New Password & Sign In'}
+            </button>
           </form>
         )}
 
@@ -526,7 +723,16 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-mono text-slate-300">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-mono text-slate-300">Password</label>
+                <button
+                  type="button"
+                  onClick={() => { setMode('forgot_password'); setError(''); setResetSuccessNotice(''); }}
+                  className="text-[11px] font-mono text-cyan-400 hover:underline hover:text-cyan-300"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 <input

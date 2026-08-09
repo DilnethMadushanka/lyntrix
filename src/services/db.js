@@ -1,7 +1,9 @@
 /**
- * LYNTRIX CLOUD DATABASE & PERSISTENCE SERVICE
- * Cloud DB Client supporting Services, Pricing, Inquiries, and User Management
+ * LYNTRIX HYBRID CLOUD DATABASE & PERSISTENCE ENGINE
+ * Powered by Supabase (PostgreSQL Cloud DB) with local client-side persistence & auto-sync.
  */
+
+import { supabase, isSupabaseConfigured } from './supabase';
 
 const STORAGE_KEYS = {
   SERVICES: 'lyntrix_cloud_services',
@@ -78,39 +80,79 @@ const DEFAULT_SERVICES = [
     sla: 'Strategic Roadmap Guaranteed'
   },
   {
+    id: 'data-ai',
+    title: 'Data & AI Systems',
+    basePrice: 4200,
+    badge: 'Enterprise Intelligence',
+    tagline: 'Predictive analytics, custom LLM pipelines, and automated intelligence.',
+    description: 'Empower decision-making with automated ETL data pipelines, custom machine learning models, and real-time enterprise intelligence dashboards.',
+    architect: 'Lead AI & Data Engineer',
+    sla: 'Sub-second Inference'
+  },
+  {
     id: 'support',
-    title: 'Support & Maintenance',
-    basePrice: 1800,
-    badge: '24/7 Managed IT',
-    tagline: 'Round-the-clock proactive monitoring, automated backups, and SLA support.',
-    description: 'Ensure 99.99% uptime with dedicated engineering teams monitoring your infrastructure, managing updates, and responding to incidents in minutes.',
-    architect: 'SOC Operations Director',
-    sla: '24/7 Monitoring & Backups'
+    title: '24/7 Managed IT Support',
+    basePrice: 1500,
+    badge: 'Round-the-Clock',
+    tagline: 'Proactive infrastructure monitoring, automated backups, and incident response.',
+    description: 'Continuous uptime monitoring, automated failover management, and immediate expert engineering intervention whenever an issue arises.',
+    architect: 'SOC Operations Lead',
+    sla: '< 5 Mins Critical Response'
   }
 ];
 
-// Initial Default Addons
+// Initial Default Add-ons
 const DEFAULT_ADDONS = [
-  { id: 'security_audit', name: 'Pentest & Security Audit', price: 1200 },
-  { id: 'ci_cd', name: 'Automated CI/CD Pipeline', price: 800 },
-  { id: 'compliance', name: 'ISO 27001 / SOC 2 Prep', price: 1500 },
-  { id: 'ai_module', name: 'AI & Data Integration', price: 1800 }
+  { id: 'compliance', title: 'HIPAA / SOC2 / GDPR Compliance Package', price: 1200, popular: true },
+  { id: 'ha', title: 'Multi-Region High Availability & Active-Active Failover', price: 1800, popular: true },
+  { id: 'cicd', title: 'Automated CI/CD DevOps Pipeline Deployment', price: 950, popular: false },
+  { id: 'pentest', title: 'Full Penetration Testing & Threat Audit', price: 1400, popular: true },
+  { id: 'monitoring', title: '24/7 Live SOC Infrastructure Monitoring', price: 750, popular: false }
 ];
 
-// Initial Default Registered Users
+// Initial Default Inquiries
+const DEFAULT_INQUIRIES = [
+  {
+    id: 'LYN-9024',
+    name: 'Sarah Vance',
+    email: 'sarah.v@aerocloud.com',
+    phone: '+1 (415) 892-0192',
+    service: 'Cloud Solutions',
+    scale: 'Global Enterprise Scale',
+    budget: '$15,000 - $25,000',
+    status: 'In Review',
+    date: '2026-08-04 14:22',
+    details: 'Need multi-region AWS EKS architecture migration with automated Kubernetes autoscaling.'
+  },
+  {
+    id: 'LYN-8812',
+    name: 'Dr. Michael Chang',
+    email: 'mchang@omnihealth.org',
+    phone: '+1 (617) 492-3811',
+    service: 'Cybersecurity',
+    scale: 'Mid-Market Enterprise',
+    budget: '$8,000 - $15,000',
+    status: 'Accepted',
+    date: '2026-08-06 09:15',
+    details: 'HIPAA zero-trust vulnerability assessment and patient portal penetration testing.'
+  }
+];
+
+// Initial Default Users
 const DEFAULT_USERS = [
   {
     id: 'USR-1001',
     name: 'Dilneth Madushanka',
     email: 'dilneth@enterprise.io',
+    password: 'password123',
     company: 'Lyntrix Global Enterprise',
     birthday: '1998-05-14',
-    phone: '+94 77 987 6543',
+    phone: '+94 77 123 4567',
     country: 'Sri Lanka',
     role: 'Enterprise Client',
     status: 'Active',
     joinedDate: '2026-08-01',
-    authProvider: 'Email'
+    authProvider: 'Email/Pass'
   },
   {
     id: 'USR-1002',
@@ -118,12 +160,12 @@ const DEFAULT_USERS = [
     email: 'sarah.v@aerocloud.com',
     company: 'AeroCloud Systems',
     birthday: '1992-11-20',
-    phone: '+1 415 889 0123',
+    phone: '+1 (415) 892-0192',
     country: 'United States',
     role: 'Enterprise Client',
     status: 'Active',
     joinedDate: '2026-08-04',
-    authProvider: 'Google'
+    authProvider: 'Google OAuth'
   },
   {
     id: 'USR-1003',
@@ -131,45 +173,51 @@ const DEFAULT_USERS = [
     email: 'mchang@omnihealth.org',
     company: 'OmniHealth Global',
     birthday: '1985-03-09',
-    phone: '+1 650 443 8910',
+    phone: '+1 (617) 492-3811',
     country: 'United States',
     role: 'VIP Client',
     status: 'Active',
     joinedDate: '2026-08-06',
-    authProvider: 'Google'
-  }
-];
-
-// Initial Default Inquiries
-const DEFAULT_INQUIRIES = [
-  {
-    id: 'LYN-9021',
-    name: 'Dilneth Madushanka',
-    email: 'dilneth@enterprise.io',
-    phone: '+94 77 987 6543',
-    service: 'Software Development',
-    scale: 'Growth Business Platform',
-    budget: '$8,500 - $12,500',
-    status: 'New',
-    date: '2026-08-08 19:42',
-    details: 'Needs modern React + Node.js high concurrency payment dashboard integration with PostgreSQL.'
-  },
-  {
-    id: 'LYN-9020',
-    name: 'Sarah Vance',
-    email: 'sarah.v@aerocloud.com',
-    phone: '+1 415 889 0123',
-    service: 'Cloud Solutions',
-    scale: 'Enterprise Scale Architecture',
-    budget: '$25,000 - $40,000',
-    status: 'In Review',
-    date: '2026-08-07 14:15',
-    details: 'AWS multi-region failover setup with Terraform IaC declarations and Kubernetes EKS auto-scaling.'
+    authProvider: 'Google OAuth'
   }
 ];
 
 export const db = {
-  // Load Services
+  isCloudConnected: () => isSupabaseConfigured,
+
+  // --- Real-Time Background Synchronization with Supabase Cloud DB ---
+  syncWithCloud: async () => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      // Sync Inquiries
+      const { data: cloudInquiries } = await supabase.from('inquiries').select('*').order('created_at', { ascending: false });
+      if (cloudInquiries && cloudInquiries.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(cloudInquiries));
+      }
+
+      // Sync Users
+      const { data: cloudUsers } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+      if (cloudUsers && cloudUsers.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(cloudUsers));
+      }
+
+      // Sync Admins
+      const { data: cloudAdmins } = await supabase.from('admins').select('*').order('created_at', { ascending: false });
+      if (cloudAdmins && cloudAdmins.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(cloudAdmins));
+      }
+
+      // Sync Services
+      const { data: cloudServices } = await supabase.from('services').select('*');
+      if (cloudServices && cloudServices.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(cloudServices));
+      }
+    } catch (e) {
+      console.warn('[SUPABASE SYNC NOTE]:', e.message);
+    }
+  },
+
+  // --- Services Management ---
   getServices: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SERVICES);
@@ -179,13 +227,28 @@ export const db = {
     }
   },
 
-  saveServices: (services) => {
+  saveServices: async (services) => {
     try {
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('services').upsert(services);
+      }
     } catch (e) {}
   },
 
-  // Load Addons
+  updateServicePrice: (serviceId, newBasePrice) => {
+    const services = db.getServices();
+    const updated = services.map(s => {
+      if (s.id === serviceId) {
+        return { ...s, basePrice: Number(newBasePrice) };
+      }
+      return s;
+    });
+    db.saveServices(updated);
+    return updated;
+  },
+
+  // --- Addons Management ---
   getAddons: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ADDONS);
@@ -195,13 +258,16 @@ export const db = {
     }
   },
 
-  saveAddons: (addons) => {
+  saveAddons: async (addons) => {
     try {
       localStorage.setItem(STORAGE_KEYS.ADDONS, JSON.stringify(addons));
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('addons').upsert(addons);
+      }
     } catch (e) {}
   },
 
-  // Load Inquiries
+  // --- Inquiries / Proposals Management ---
   getInquiries: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.INQUIRIES);
@@ -217,14 +283,22 @@ export const db = {
     } catch (e) {}
   },
 
-  addInquiry: (newInquiry) => {
+  addInquiry: async (newInquiry) => {
     const inquiries = db.getInquiries();
     const updated = [newInquiry, ...inquiries];
     db.saveInquiries(updated);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('inquiries').insert([newInquiry]);
+      } catch (e) {
+        console.warn('Supabase inquiry insert note:', e);
+      }
+    }
     return updated;
   },
 
-  updateInquiryStatus: (inquiryId, newStatus) => {
+  updateInquiryStatus: async (inquiryId, newStatus) => {
     const inquiries = db.getInquiries();
     const updated = inquiries.map(item => {
       if (item.id === inquiryId) {
@@ -233,17 +307,29 @@ export const db = {
       return item;
     });
     db.saveInquiries(updated);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('inquiries').update({ status: newStatus }).eq('id', inquiryId);
+      } catch (e) {}
+    }
     return updated;
   },
 
-  deleteInquiry: (inquiryId) => {
+  deleteInquiry: async (inquiryId) => {
     const inquiries = db.getInquiries();
     const updated = inquiries.filter(item => item.id !== inquiryId);
     db.saveInquiries(updated);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('inquiries').delete().eq('id', inquiryId);
+      } catch (e) {}
+    }
     return updated;
   },
 
-  // User Management
+  // --- User Management ---
   getUsers: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.USERS);
@@ -259,7 +345,7 @@ export const db = {
     } catch (e) {}
   },
 
-  registerUser: (userData) => {
+  registerUser: async (userData) => {
     const users = db.getUsers();
     
     // Check if email already exists
@@ -272,10 +358,11 @@ export const db = {
       id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
       name: userData.name,
       email: userData.email,
-      company: userData.company || 'Personal / Unspecified',
-      birthday: userData.birthday || 'N/A',
+      password: userData.password,
+      company: userData.company || 'Corporate Client',
+      birthday: userData.birthday || '1998-05-14',
       phone: userData.phone || 'N/A',
-      country: userData.country || 'Global',
+      country: userData.country || 'Sri Lanka',
       role: 'Client',
       status: 'Active',
       joinedDate: new Date().toISOString().split('T')[0],
@@ -285,6 +372,13 @@ export const db = {
     const updated = [newUser, ...users];
     db.saveUsers(updated);
     db.setCurrentUser(newUser);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('users').insert([newUser]);
+      } catch (e) {}
+    }
+
     return newUser;
   },
 
@@ -301,7 +395,7 @@ export const db = {
     return found;
   },
 
-  updateUserPassword: (email, newPassword) => {
+  updateUserPassword: async (email, newPassword) => {
     const cleanEmail = email.trim().toLowerCase();
 
     // 1. Check if email belongs to an Admin in Cloud DB
@@ -310,6 +404,12 @@ export const db = {
     if (adminIndex !== -1) {
       admins[adminIndex].password = newPassword;
       db.saveAdmins(admins);
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('admins').update({ password: newPassword }).eq('email', cleanEmail);
+        } catch (e) {}
+      }
       return { success: true, type: 'admin', user: admins[adminIndex] };
     }
 
@@ -319,6 +419,12 @@ export const db = {
     if (userIndex !== -1) {
       users[userIndex].password = newPassword;
       db.saveUsers(users);
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('users').update({ password: newPassword }).eq('email', cleanEmail);
+        } catch (e) {}
+      }
       return { success: true, type: 'client', user: users[userIndex] };
     }
 
@@ -335,10 +441,17 @@ export const db = {
       authProvider: 'Email'
     };
     db.saveUsers([newUser, ...users]);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('users').insert([newUser]);
+      } catch (e) {}
+    }
+
     return { success: true, type: 'client', user: newUser };
   },
 
-  updateUserProfile: (updatedData) => {
+  updateUserProfile: async (updatedData) => {
     const users = db.getUsers();
     const index = users.findIndex(u => u.email?.toLowerCase() === updatedData.email?.toLowerCase() || u.id === updatedData.id);
     let finalUser = updatedData;
@@ -348,18 +461,24 @@ export const db = {
       db.saveUsers(users);
     }
     db.setCurrentUser(finalUser);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('users').update(updatedData).eq('email', updatedData.email);
+      } catch (e) {}
+    }
+
     return finalUser;
   },
 
-  googleAuth: (googleProfile) => {
+  googleAuth: async (googleProfile) => {
     const users = db.getUsers();
     let found = users.find(u => u.email.toLowerCase() === googleProfile.email.toLowerCase());
     
     if (!found) {
-      // Auto-register via Google OAuth
       found = {
         id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
-        name: googleProfile.name || 'Google User',
+        name: googleProfile.name || googleProfile.email.split('@')[0],
         email: googleProfile.email,
         company: googleProfile.company || 'Google Verified Org',
         birthday: googleProfile.birthday || '1995-01-01',
@@ -371,6 +490,12 @@ export const db = {
         authProvider: 'Google'
       };
       db.saveUsers([found, ...users]);
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('users').insert([found]);
+        } catch (e) {}
+      }
     }
 
     db.setCurrentUser(found);
@@ -411,9 +536,12 @@ export const db = {
     }
   },
 
-  saveAdmins: (admins) => {
+  saveAdmins: async (admins) => {
     try {
       localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(admins));
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('admins').upsert(admins);
+      }
     } catch (e) {}
   },
 
@@ -430,33 +558,38 @@ export const db = {
       db.setCurrentAdmin(matched);
       return { success: true, admin: matched };
     }
-    return false;
+    return { success: false, admin: null };
   },
 
-  addAdmin: (adminData) => {
+  addAdmin: async (adminData) => {
     const admins = db.getAdmins();
-    const cleanEmail = adminData.email.trim().toLowerCase();
-
-    if (admins.some(a => a.email.toLowerCase() === cleanEmail)) {
-      throw new Error('An admin account with this email address already exists.');
+    const existing = admins.find(a => a.email.toLowerCase() === adminData.email.toLowerCase());
+    if (existing) {
+      throw new Error('An administrator account with this corporate email already exists.');
     }
 
     const newAdmin = {
       id: `ADM-${Math.floor(100 + Math.random() * 900)}`,
-      email: cleanEmail,
-      password: adminData.password || 'admin123',
-      name: adminData.name || 'Cloud Administrator',
-      role: adminData.role || 'System Admin',
+      name: adminData.name,
+      email: adminData.email,
+      password: adminData.password,
+      role: adminData.role || 'Master Admin',
       status: 'Active',
       createdDate: new Date().toISOString().split('T')[0]
     };
 
     const updated = [newAdmin, ...admins];
     db.saveAdmins(updated);
-    return newAdmin;
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('admins').insert([newAdmin]);
+      } catch (e) {}
+    }
+    return updated;
   },
 
-  updateAdminPassword: (adminId, newPassword) => {
+  updateAdminPassword: async (adminId, newPassword) => {
     const admins = db.getAdmins();
     const updated = admins.map(a => {
       if (a.id === adminId) {
@@ -465,16 +598,28 @@ export const db = {
       return a;
     });
     db.saveAdmins(updated);
-    return true;
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('admins').update({ password: newPassword }).eq('id', adminId);
+      } catch (e) {}
+    }
+    return updated;
   },
 
-  deleteAdmin: (adminId) => {
+  deleteAdmin: async (adminId) => {
     const admins = db.getAdmins();
     if (admins.length <= 1) {
-      throw new Error('Cannot delete the last remaining admin account.');
+      throw new Error('Cannot delete the primary root administrator account.');
     }
     const updated = admins.filter(a => a.id !== adminId);
     db.saveAdmins(updated);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('admins').delete().eq('id', adminId);
+      } catch (e) {}
+    }
     return updated;
   },
 

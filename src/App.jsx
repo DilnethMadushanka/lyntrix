@@ -35,8 +35,13 @@ export default function App() {
   const [viewMode, setViewMode] = useState('site'); // 'site' or 'admin'
   const [dbTrigger, setDbTrigger] = useState(0);
 
-  // 1-Click Magic Email Verification Link Listener (?verify_otp=...&email=...&action=...)
+  // 1-Click Magic Email Verification Link Listener & Cloud DB Sync
   useEffect(() => {
+    // Background sync with Supabase Cloud DB
+    db.syncWithCloud().then(() => {
+      setDbTrigger(prev => prev + 1);
+    });
+
     try {
       const params = new URLSearchParams(window.location.search);
       const verifyOtp = params.get('verify_otp');

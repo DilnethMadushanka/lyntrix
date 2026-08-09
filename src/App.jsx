@@ -14,6 +14,7 @@ import Footer from './components/Footer';
 import AdminDashboard from './components/AdminDashboard';
 import ProjectTrackerModal from './components/ProjectTrackerModal';
 import AuthModal from './components/AuthModal';
+import UserProfileModal from './components/UserProfileModal';
 import { db } from './services/db';
 import { LayoutDashboard } from 'lucide-react';
 
@@ -27,6 +28,7 @@ export default function App() {
   });
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [viewMode, setViewMode] = useState('site'); // 'site' or 'admin'
   const [dbTrigger, setDbTrigger] = useState(0);
 
@@ -106,6 +108,7 @@ export default function App() {
         onOpenAdminDashboard={() => setViewMode('admin')}
         onOpenTracker={() => setIsTrackerOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenUserProfile={() => setIsProfileOpen(true)}
         currentUser={currentUser}
         onLogoutUser={handleLogoutUser}
       />
@@ -133,6 +136,21 @@ export default function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         onAuthSuccess={handleAuthSuccess}
+      />
+
+      {/* User Profile & Account Management Modal */}
+      <UserProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        currentUser={currentUser}
+        onProfileUpdated={(updated) => {
+          setCurrentUser(updated);
+          triggerDataRefresh();
+        }}
+        onOpenTracker={() => {
+          setIsProfileOpen(false);
+          setIsTrackerOpen(true);
+        }}
       />
 
       {/* Project Status Tracker Modal */}

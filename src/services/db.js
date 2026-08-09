@@ -338,6 +338,19 @@ export const db = {
     return { success: true, type: 'client', user: newUser };
   },
 
+  updateUserProfile: (updatedData) => {
+    const users = db.getUsers();
+    const index = users.findIndex(u => u.email?.toLowerCase() === updatedData.email?.toLowerCase() || u.id === updatedData.id);
+    let finalUser = updatedData;
+    if (index !== -1) {
+      users[index] = { ...users[index], ...updatedData };
+      finalUser = users[index];
+      db.saveUsers(users);
+    }
+    db.setCurrentUser(finalUser);
+    return finalUser;
+  },
+
   googleAuth: (googleProfile) => {
     const users = db.getUsers();
     let found = users.find(u => u.email.toLowerCase() === googleProfile.email.toLowerCase());

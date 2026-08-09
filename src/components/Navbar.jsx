@@ -3,11 +3,11 @@ import { ShieldCheck, Menu, X, ArrowRight, Sparkles, Terminal, Lock, LayoutDashb
 
 export default function Navbar({ 
   onOpenCalculator, 
-  onOpenAdminLogin, 
   isAdminLoggedIn, 
   onOpenAdminDashboard, 
   onOpenTracker,
   onOpenAuth,
+  onOpenUserProfile,
   currentUser,
   onLogoutUser
 }) {
@@ -91,17 +91,28 @@ export default function Navbar({
 
               {/* User Account Button or Sign In Button */}
               {currentUser ? (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono">
-                  <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-[10px] border border-cyan-500/40">
-                    {currentUser.name.charAt(0)}
-                  </div>
-                  <span className="text-white font-semibold max-w-[100px] truncate">{currentUser.name}</span>
-                  {isAdminLoggedIn && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 font-bold border border-cyan-800">
-                      ADMIN
-                    </span>
-                  )}
-                  <button onClick={onLogoutUser} className="text-slate-400 hover:text-rose-400 ml-1" title="Sign Out">
+                <div className="flex items-center gap-1.5 p-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono">
+                  <button
+                    onClick={onOpenUserProfile}
+                    className="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+                    title="Manage Profile, Password & View Proposals"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-500 text-slate-950 font-extrabold flex items-center justify-center text-[10px] border border-cyan-400">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <span className="text-white font-semibold max-w-[100px] truncate">{currentUser.name}</span>
+                    {isAdminLoggedIn && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 font-bold border border-cyan-800">
+                        ADMIN
+                      </span>
+                    )}
+                  </button>
+
+                  <button 
+                    onClick={onLogoutUser} 
+                    className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 rounded transition-colors" 
+                    title="Sign Out"
+                  >
                     <LogOut className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -174,11 +185,17 @@ export default function Navbar({
             <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-2">
               {currentUser ? (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs">
-                  <div>
-                    <div className="text-white font-bold">{currentUser.name}</div>
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); onOpenUserProfile(); }}
+                    className="text-left flex-1"
+                  >
+                    <div className="text-white font-bold hover:text-cyan-400 transition-colors flex items-center gap-1.5">
+                      <span>{currentUser.name}</span>
+                      <span className="text-[10px] text-cyan-400">⚙️</span>
+                    </div>
                     <div className="text-[10px] text-slate-400">{currentUser.email}</div>
-                  </div>
-                  <button onClick={onLogoutUser} className="text-rose-400 hover:underline">Sign Out</button>
+                  </button>
+                  <button onClick={onLogoutUser} className="text-rose-400 hover:underline px-2 py-1">Sign Out</button>
                 </div>
               ) : (
                 <button

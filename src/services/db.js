@@ -350,7 +350,12 @@ export const db = {
   getAdmins: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ADMINS);
-      return saved ? JSON.parse(saved) : DEFAULT_ADMINS;
+      if (!saved) {
+        localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(DEFAULT_ADMINS));
+        return DEFAULT_ADMINS;
+      }
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_ADMINS;
     } catch (e) {
       return DEFAULT_ADMINS;
     }

@@ -26,32 +26,67 @@ function nodemailerDevServer() {
               });
 
               const isReset = purpose.toLowerCase().includes('reset') || purpose.toLowerCase().includes('forgot');
+              const isChange = purpose.toLowerCase().includes('change');
+
+              let titleText = '🔐 2FA Identity Verification';
+              let descText = 'Thank you for registering with Lyntrix IT Services. Use the 6-digit one-time security code below to activate and verify your corporate identity:';
+
+              if (isReset) {
+                titleText = '🔑 Password Reset Request';
+                descText = 'We received a request to reset your Lyntrix corporate account password. Enter the 6-digit security code below to authorize this password reset:';
+              } else if (isChange) {
+                titleText = '🛡️ Password Change Verification';
+                descText = 'A request was made from your client dashboard to update your account password. Enter the 6-digit authorization code below to confirm this security change:';
+              }
 
               const htmlContent = `
-                <div style="font-family: Arial, sans-serif; background-color: #07090e; color: #f1f5f9; padding: 40px 20px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #1e293b;">
-                  <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #38bdf8; font-size: 26px; margin: 0; letter-spacing: 2px;">LYNTRIX</h1>
-                    <p style="color: #94a3b8; font-size: 12px; margin-top: 5px;">ENTERPRISE ARCHITECTURE & SECURITY</p>
-                  </div>
-                  <div style="background-color: #0f172a; padding: 30px; border-radius: 12px; border: 1px solid #334155; text-align: center;">
-                    <h2 style="color: #ffffff; font-size: 20px;">
-                      ${isReset ? '🔑 Password Reset Verification' : '🔐 2FA Email Verification Code'}
-                    </h2>
-                    <p style="color: #cbd5e1; font-size: 14px;">Your 6-digit one-time password is:</p>
-                    <div style="margin: 25px 0; background: rgba(56, 189, 248, 0.1); padding: 18px; border-radius: 12px; border: 1px dashed #38bdf8; display: inline-block;">
-                      <span style="font-family: monospace; font-size: 36px; font-weight: 800; letter-spacing: 10px; color: #38bdf8;">
-                        ${otpCode}
-                      </span>
-                    </div>
-                    <p style="color: #94a3b8; font-size: 12px;">Valid for 2 minutes. Do not share this code.</p>
-                  </div>
-                </div>
+                <!DOCTYPE html>
+                <html>
+                <body style="margin: 0; padding: 0; background-color: #05070B; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #05070B; padding: 40px 15px;">
+                    <tr>
+                      <td align="center">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; background: #0A0E17; border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
+                          <tr><td height="4" style="background: linear-gradient(90deg, #00F0FF, #3B82F6, #8B5CF6);"></td></tr>
+                          <tr>
+                            <td align="center" style="padding: 35px 30px 20px 30px;">
+                              <div style="display: inline-block; padding: 10px 18px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px; margin-bottom: 12px;">
+                                <span style="font-family: monospace; font-size: 20px; font-weight: 800; color: #00F0FF; letter-spacing: 2px;">⚡ LYNTRIX</span>
+                              </div>
+                              <p style="margin: 0; font-size: 11px; font-family: monospace; color: #64748B; letter-spacing: 2px; text-transform: uppercase;">Enterprise Architecture Sentinel</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 10px 40px 30px 40px;">
+                              <div style="background: #0E1524; border: 1px solid #1E293B; border-radius: 16px; padding: 30px 25px; text-align: center;">
+                                <h2 style="margin: 0 0 10px 0; color: #FFFFFF; font-size: 20px;">${titleText}</h2>
+                                <p style="margin: 0 0 25px 0; color: #94A3B8; font-size: 13px; line-height: 1.6;">${descText}</p>
+                                <div style="margin: 0 auto 20px auto; background: rgba(0, 240, 255, 0.1); border: 2px dashed #00F0FF; border-radius: 14px; padding: 18px 25px; display: inline-block;">
+                                  <span style="font-family: monospace; font-size: 38px; font-weight: 900; letter-spacing: 12px; color: #00F0FF; display: block; margin-left: 12px;">${otpCode}</span>
+                                </div>
+                                <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(51, 65, 85, 0.6); border-radius: 10px; padding: 10px; font-size: 11px; font-family: monospace; color: #64748B;">
+                                  ⏱️ Valid for: <strong style="color: #E2E8F0;">2 Minutes</strong> • Recipient: <strong style="color: #00F0FF;">${toEmail}</strong>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 20px 40px 30px 40px; border-top: 1px solid #1E293B; text-align: center; color: #475569; font-size: 11px; font-family: monospace;">
+                              © ${new Date().getFullYear()} LYNTRIX IT SERVICES • dilnethmadushanka.online
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </body>
+                </html>
               `;
 
               const info = await transporter.sendMail({
                 from: `"Lyntrix Security" <${gmailUser}>`,
                 to: toEmail,
-                subject: `[Lyntrix OTP] ${otpCode} is your ${isReset ? 'Password Reset' : 'Verification'} Code`,
+                subject: `[Lyntrix Security] ${otpCode} is your ${isReset ? 'Password Reset' : isChange ? 'Password Change' : 'Verification'} Code`,
                 html: htmlContent
               });
 
@@ -85,7 +120,7 @@ function nodemailerDevServer() {
 
               let recipient = type === 'admin_alert' ? `admin@lyntrix.tech, ${gmailUser}` : orderData.email;
               let subject = type === 'admin_alert' 
-                ? `🚀 [NEW ORDER] Proposal ${orderData.id} - ${orderData.name} (${orderData.service})`
+                ? `⚡ [NEW PROPOSAL] ${orderData.id} - ${orderData.name} (${orderData.service})`
                 : `✅ [Proposal Received] Lyntrix IT Services: ${orderData.id} - ${orderData.service}`;
 
               const info = await transporter.sendMail({

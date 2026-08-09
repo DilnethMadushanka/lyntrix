@@ -184,18 +184,39 @@ export default function Navbar({
 
             <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-2">
               {currentUser ? (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs">
-                  <button
-                    onClick={() => { setMobileMenuOpen(false); onOpenUserProfile(); }}
-                    className="text-left flex-1"
-                  >
-                    <div className="text-white font-bold hover:text-cyan-400 transition-colors flex items-center gap-1.5">
-                      <span>{currentUser.name}</span>
-                      <span className="text-[10px] text-cyan-400">⚙️</span>
+                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/40 border border-slate-800 font-mono text-xs space-y-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-500 text-slate-950 font-extrabold flex items-center justify-center text-sm shadow-md border border-cyan-400 shrink-0">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                     </div>
-                    <div className="text-[10px] text-slate-400">{currentUser.email}</div>
-                  </button>
-                  <button onClick={onLogoutUser} className="text-rose-400 hover:underline px-2 py-1">Sign Out</button>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-white font-bold truncate flex items-center gap-1.5">
+                        <span>{currentUser.name}</span>
+                        {isAdminLoggedIn && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 font-bold border border-cyan-800">
+                            ADMIN
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">{currentUser.email}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); onOpenUserProfile(); }}
+                      className="flex-1 py-2 px-3 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 text-[11px] font-bold border border-cyan-800/80 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Manage Profile & 2FA</span>
+                    </button>
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); onLogoutUser(); }}
+                      className="py-2 px-3 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 text-[11px] border border-slate-800 transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button

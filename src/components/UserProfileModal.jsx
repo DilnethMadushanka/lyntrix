@@ -44,9 +44,12 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
     return () => clearInterval(interval);
   }, [passwordStep, timerSeconds]);
 
-  // Sync user data
+  // Inquiries State for dynamic live updates
+  const [inquiriesList, setInquiriesList] = useState([]);
+
+  // Sync user data & fresh inquiries on open
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && isOpen) {
       setFormData({
         name: currentUser.name || '',
         email: currentUser.email || '',
@@ -55,6 +58,7 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
         phone: currentUser.phone || '',
         country: currentUser.country || 'Sri Lanka'
       });
+      setInquiriesList(db.getInquiries());
       setPasswordStep('input');
       setNewPassword('');
       setConfirmPassword('');
@@ -65,8 +69,8 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
   if (!isOpen || !currentUser) return null;
 
   // Filter inquiries for this user
-  const userInquiries = db.getInquiries().filter(
-    inq => inq.email?.toLowerCase() === currentUser.email?.toLowerCase()
+  const userInquiries = inquiriesList.filter(
+    inq => inq.email?.trim().toLowerCase() === currentUser.email?.trim().toLowerCase()
   );
 
   const handleUpdateProfile = (e) => {

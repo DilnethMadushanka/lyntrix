@@ -4,11 +4,11 @@ import confetti from 'canvas-confetti';
 import { db } from '../services/db';
 import { emailService } from '../services/emailService';
 
-export default function ContactSection({ estimateData, onInquirySubmitted }) {
+export default function ContactSection({ estimateData, onInquirySubmitted, currentUser }) {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    name: currentUser?.name || '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
     service: 'Software Development',
     budget: '$5,000 - $15,000',
     details: '',
@@ -17,6 +17,18 @@ export default function ContactSection({ estimateData, onInquirySubmitted }) {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailNotice, setEmailNotice] = useState('');
+
+  // Auto-sync with current logged-in user profile
+  useEffect(() => {
+    if (currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || currentUser.name || '',
+        email: currentUser.email || prev.email,
+        phone: prev.phone || currentUser.phone || ''
+      }));
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (estimateData) {

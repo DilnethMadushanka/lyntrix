@@ -184,7 +184,7 @@ export default function App() {
         <AboutSection />
         <TestimonialsSection />
         <FAQSection />
-        <ContactSection estimateData={estimateData} onInquirySubmitted={triggerDataRefresh} />
+        <ContactSection estimateData={estimateData} onInquirySubmitted={triggerDataRefresh} currentUser={currentUser} />
       </main>
 
       <Footer

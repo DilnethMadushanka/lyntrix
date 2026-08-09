@@ -46,13 +46,17 @@ export default function ContactSection({ estimateData, onInquirySubmitted }) {
       details: formData.details
     };
 
-    // Save lead proposal to Cloud DB!
+    // 1. Save lead proposal to Cloud DB!
     db.addInquiry(newLead);
     if (onInquirySubmitted) onInquirySubmitted();
 
-    // Trigger Automated Email Alert to Admin!
-    const emailResult = await emailService.sendAdminOrderAlert(newLead);
-    setEmailNotice(`📧 Automated Order Alert Dispatched to admin@lyntrix.tech (${emailResult.timestamp})`);
+    // 2. Trigger Automated Order Alert to Admin Gmail!
+    const adminAlertResult = await emailService.sendAdminOrderAlert(newLead);
+
+    // 3. Trigger Automated "Order Accepted & Received" Confirmation to Client!
+    await emailService.sendClientOrderAccepted(newLead);
+
+    setEmailNotice(`📧 Automated Order Alert dispatched to Admin Inbox (${adminAlertResult.adminUser || 'dilneth.madushanka@gmail.com'}) & Client (${newLead.email})`);
 
     setIsSubmitting(false);
     setSubmitted(true);

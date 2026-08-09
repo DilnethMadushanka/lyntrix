@@ -224,6 +224,25 @@ export const db = {
     return updated;
   },
 
+  updateInquiryStatus: (inquiryId, newStatus) => {
+    const inquiries = db.getInquiries();
+    const updated = inquiries.map(item => {
+      if (item.id === inquiryId) {
+        return { ...item, status: newStatus };
+      }
+      return item;
+    });
+    db.saveInquiries(updated);
+    return updated;
+  },
+
+  deleteInquiry: (inquiryId) => {
+    const inquiries = db.getInquiries();
+    const updated = inquiries.filter(item => item.id !== inquiryId);
+    db.saveInquiries(updated);
+    return updated;
+  },
+
   // User Management
   getUsers: () => {
     try {

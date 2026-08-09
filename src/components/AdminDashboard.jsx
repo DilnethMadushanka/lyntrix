@@ -3,15 +3,17 @@ import {
   Users, DollarSign, Activity, ShieldCheck, Search, Filter, Plus, 
   Trash2, Edit, CheckCircle2, AlertTriangle, Eye, ArrowLeft, Download, 
   RefreshCcw, Server, Cpu, Database, Lock, LogOut, Sparkles, Save, Check,
-  UserPlus, UserCheck, Calendar, Building, Globe, Phone, UserX
+  UserPlus, UserCheck, Calendar, Building, Globe, Phone, UserX, Mail, Send
 } from 'lucide-react';
 import { db } from '../services/db';
+import { emailService } from '../services/emailService';
 
 export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated }) {
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [newUserModalOpen, setNewUserModalOpen] = useState(false);
 
   // Cloud DB States
@@ -152,6 +154,49 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
       } catch (err) {
         alert(err.message || 'Failed to delete admin.');
       }
+    }
+  };
+
+  // Inquiry / Order Management Handlers
+  const handleAcceptOrder = async (lead) => {
+    db.updateInquiryStatus(lead.id, 'Accepted');
+    setInquiries(db.getInquiries());
+    if (onDataUpdated) onDataUpdated();
+
+    await emailService.sendClientOrderAccepted(lead);
+    await emailService.sendAdminOrderAlert({ ...lead, status: 'Order Accepted by Admin' });
+
+    setSaveNotice(`✅ Order ${lead.id} accepted! Automated confirmation email dispatched to ${lead.email}.`);
+    setTimeout(() => setSaveNotice(''), 4000);
+  };
+
+  const handleInquiryStatusChange = async (leadId, newStatus) => {
+    db.updateInquiryStatus(leadId, newStatus);
+    setInquiries(db.getInquiries());
+    if (onDataUpdated) onDataUpdated();
+
+    const lead = inquiries.find(i => i.id === leadId);
+    if (lead) {
+      await emailService.sendOrderStatusUpdate(lead, newStatus);
+    }
+
+    setSaveNotice(`✨ Proposal ${leadId} status updated to "${newStatus}" & automated email dispatched!`);
+    setTimeout(() => setSaveNotice(''), 4000);
+  };
+
+  const handleOpenDirectGmail = (lead) => {
+    const subject = `Lyntrix IT Services: Update Regarding Your Proposal [${lead.id}] - ${lead.service}`;
+    const body = `Dear ${lead.name},\n\nThank you for choosing Lyntrix IT Services for your ${lead.service} project (${lead.scale || 'Enterprise'}).\n\nWe have reviewed your project requirements:\n"${lead.details}"\n\nOur Senior Solutions Architecture Lead has accepted your scope and is ready to schedule our technical discovery call.\n\nProposal Tracking ID: ${lead.id}\nEstimated Investment: ${lead.budget}\nClient Contact: ${lead.phone || lead.email}\n\nBest regards,\nLyntrix Architecture & Engineering Advisory Team\nadmin@lyntrix.tech | https://dilnethmadushanka.online`;
+    emailService.openDirectGmailComposer(lead.email, subject, body);
+  };
+
+  const handleDeleteInquiry = (leadId) => {
+    if (confirm(`Are you sure you want to delete proposal ${leadId}?`)) {
+      const updated = db.deleteInquiry(leadId);
+      setInquiries(updated);
+      if (onDataUpdated) onDataUpdated();
+      setSaveNotice(`🗑️ Proposal ${leadId} deleted.`);
+      setTimeout(() => setSaveNotice(''), 3000);
     }
   };
 
@@ -513,33 +558,132 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
           </div>
         )}
 
-        {/* TAB: INQUIRIES */}
+        {/* TAB: INQUIRIES & AUTOMATED ORDER MANAGEMENT */}
         {activeTab === 'inquiries' && (
-          <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
-                    <th className="p-4">Lead ID / Date</th>
-                    <th className="p-4">Client Contact</th>
-                    <th className="p-4">Service Area</th>
-                    <th className="p-4">Est. Budget</th>
-                    <th className="p-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80 text-xs">
-                  {filteredInquiries.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-slate-900/50">
-                      <td className="p-4 font-mono font-bold text-cyan-400">{lead.id}</td>
-                      <td className="p-4"><div className="font-bold text-white">{lead.name}</div><div className="text-[11px] text-slate-400 font-mono">{lead.email}</div></td>
-                      <td className="p-4 text-slate-300 font-mono">{lead.service}</td>
-                      <td className="p-4 font-mono font-bold text-emerald-400">{lead.budget}</td>
-                      <td className="p-4 text-cyan-400 font-mono">{lead.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="space-y-6">
+            
+            {/* Header info */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 rounded-2xl border border-slate-800">
+              <div>
+                <h3 className="text-xl font-bold text-white font-['Outfit']">Client Proposals & Automated Order Dispatch</h3>
+                <p className="text-xs text-slate-400 font-mono mt-1">
+                  Accept incoming project proposals, dispatch automated confirmation emails to clients, and send 1-click Direct Gmail messages.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800 text-xs font-mono font-bold flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Admin Relay: Active</span>
+                </span>
+              </div>
             </div>
+
+            <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                      <th className="p-4">Lead ID / Date</th>
+                      <th className="p-4">Client Contact</th>
+                      <th className="p-4">Service Area & Scale</th>
+                      <th className="p-4">Est. Budget</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 text-right">Order Actions & Gmail</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 text-xs">
+                    {filteredInquiries.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-slate-400 font-mono">
+                          No client proposals or inquiries recorded in database.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredInquiries.map((lead) => (
+                        <tr key={lead.id} className="hover:bg-slate-900/50 transition-colors">
+                          <td className="p-4 font-mono">
+                            <div className="font-bold text-cyan-400">{lead.id}</div>
+                            <div className="text-[10px] text-slate-400">{lead.date}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="font-bold text-white font-['Outfit']">{lead.name}</div>
+                            <div className="text-[11px] text-slate-400 font-mono">{lead.email}</div>
+                            {lead.phone && lead.phone !== 'N/A' && (
+                              <div className="text-[10px] text-slate-500 font-mono">{lead.phone}</div>
+                            )}
+                          </td>
+                          <td className="p-4 font-mono text-slate-300">
+                            <div>{lead.service}</div>
+                            <div className="text-[10px] text-cyan-400/80">{lead.scale || 'Enterprise'}</div>
+                          </td>
+                          <td className="p-4 font-mono font-bold text-emerald-400">
+                            {lead.budget}
+                          </td>
+                          <td className="p-4">
+                            <select
+                              value={lead.status}
+                              onChange={e => handleInquiryStatusChange(lead.id, e.target.value)}
+                              className={`px-2.5 py-1 rounded text-xs font-mono font-bold border focus:outline-none ${
+                                lead.status === 'Accepted' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' :
+                                lead.status === 'New' ? 'bg-cyan-950 text-cyan-300 border-cyan-800' :
+                                lead.status === 'In Review' ? 'bg-amber-950 text-amber-300 border-amber-800' :
+                                lead.status === 'Proposal Sent' ? 'bg-indigo-950 text-indigo-300 border-indigo-800' :
+                                'bg-purple-950 text-purple-300 border-purple-800'
+                              }`}
+                            >
+                              <option value="New">New</option>
+                              <option value="Accepted">Accepted</option>
+                              <option value="In Review">In Review</option>
+                              <option value="Proposal Sent">Proposal Sent</option>
+                              <option value="Closed Won">Closed Won</option>
+                            </select>
+                          </td>
+                          <td className="p-4 text-right space-x-2 whitespace-nowrap">
+                            {lead.status !== 'Accepted' && (
+                              <button
+                                onClick={() => handleAcceptOrder(lead)}
+                                className="px-2.5 py-1.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 text-xs font-mono font-bold border border-emerald-700/80 transition-all inline-flex items-center gap-1 shadow-sm"
+                                title="Accept Order and dispatch automated confirmation email to Client"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Accept Order</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleOpenDirectGmail(lead)}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 text-xs font-mono border border-slate-700 transition-all inline-flex items-center gap-1"
+                              title="Open Direct Gmail Web Composer with pre-filled proposal reply"
+                            >
+                              <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Direct Gmail</span>
+                            </button>
+
+                            <button
+                              onClick={() => setSelectedInquiry(lead)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-cyan-400 border border-slate-700 transition-colors inline-flex items-center"
+                              title="View Full Scope & Requirements"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteInquiry(lead.id)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-rose-400 border border-slate-700 transition-colors inline-flex items-center"
+                              title="Delete Proposal"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -828,6 +972,66 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                 <button type="submit" className="px-5 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold font-mono">Update DB Password</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Inspection Modal for Proposal Inquiry */}
+      {selectedInquiry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="glass-card max-w-lg w-full p-6 rounded-2xl border border-cyan-500/40 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <span className="text-xs font-mono text-cyan-400">{selectedInquiry.id} • {selectedInquiry.date}</span>
+                <h3 className="text-xl font-bold text-white font-['Outfit']">{selectedInquiry.name}</h3>
+              </div>
+              <button onClick={() => setSelectedInquiry(null)} className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <div className="space-y-2.5 text-xs font-mono">
+              <div><span className="text-slate-400">Client Corporate Email:</span> <span className="text-cyan-300 font-bold">{selectedInquiry.email}</span></div>
+              <div><span className="text-slate-400">Phone / Hotline:</span> <span className="text-white">{selectedInquiry.phone || 'N/A'}</span></div>
+              <div><span className="text-slate-400">Target Service:</span> <span className="text-white font-bold">{selectedInquiry.service}</span></div>
+              <div><span className="text-slate-400">Architecture Scale:</span> <span className="text-indigo-400">{selectedInquiry.scale || 'Custom Enterprise'}</span></div>
+              <div><span className="text-slate-400">Estimated Budget:</span> <span className="text-emerald-400 font-bold">{selectedInquiry.budget}</span></div>
+              <div><span className="text-slate-400">Current Status:</span> <span className="text-cyan-400 font-bold uppercase">{selectedInquiry.status}</span></div>
+
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                <div className="text-[10px] text-slate-500 uppercase">Project Scope & Client Requirements:</div>
+                <p className="text-slate-200 text-xs font-normal leading-relaxed">{selectedInquiry.details}</p>
+              </div>
+            </div>
+
+            <div className="pt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  handleAcceptOrder(selectedInquiry);
+                  setSelectedInquiry(null);
+                }}
+                className="px-3.5 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs font-mono flex items-center gap-1.5 shadow-md shadow-emerald-500/20"
+              >
+                <Check className="w-4 h-4" />
+                <span>Accept Order & Notify</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  handleOpenDirectGmail(selectedInquiry);
+                  setSelectedInquiry(null);
+                }}
+                className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs font-mono flex items-center gap-1.5 border border-slate-700"
+              >
+                <Mail className="w-4 h-4 text-cyan-400" />
+                <span>Direct Gmail</span>
+              </button>
+
+              <button
+                onClick={() => setSelectedInquiry(null)}
+                className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400 text-xs font-mono"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

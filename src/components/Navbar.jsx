@@ -96,6 +96,11 @@ export default function Navbar({
                     {currentUser.name.charAt(0)}
                   </div>
                   <span className="text-white font-semibold max-w-[100px] truncate">{currentUser.name}</span>
+                  {isAdminLoggedIn && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 font-bold border border-cyan-800">
+                      ADMIN
+                    </span>
+                  )}
                   <button onClick={onLogoutUser} className="text-slate-400 hover:text-rose-400 ml-1" title="Sign Out">
                     <LogOut className="w-3.5 h-3.5" />
                   </button>
@@ -106,25 +111,18 @@ export default function Navbar({
                   className="flex items-center gap-1.5 text-xs font-mono font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-all"
                 >
                   <User className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Client Login</span>
+                  <span>Login / Register</span>
                 </button>
               )}
 
-              {isAdminLoggedIn ? (
+              {isAdminLoggedIn && (
                 <button
                   onClick={onOpenAdminDashboard}
-                  className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 px-3 py-2 rounded-lg bg-cyan-950 border border-cyan-800 hover:bg-cyan-900 transition-all"
+                  className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 px-3 py-2 rounded-lg bg-cyan-950 border border-cyan-800 hover:bg-cyan-900 transition-all shadow-md shadow-cyan-950"
+                  title="Open Admin Console"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Admin</span>
-                </button>
-              ) : (
-                <button
-                  onClick={onOpenAdminLogin}
-                  className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-cyan-400 border border-slate-800 hover:border-slate-700 transition-all"
-                  title="Admin Portal Login"
-                >
-                  <Lock className="w-4 h-4" />
+                  <span>Admin Console</span>
                 </button>
               )}
 
@@ -200,21 +198,13 @@ export default function Navbar({
                 Track Project Status
               </button>
 
-              {isAdminLoggedIn ? (
+              {isAdminLoggedIn && (
                 <button
                   onClick={() => { setMobileMenuOpen(false); onOpenAdminDashboard(); }}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-950 text-cyan-300 font-mono text-sm font-bold border border-cyan-800"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Launch Admin Console
-                </button>
-              ) : (
-                <button
-                  onClick={() => { setMobileMenuOpen(false); onOpenAdminLogin(); }}
-                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-900 text-slate-300 font-mono text-xs border border-slate-800"
-                >
-                  <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                  Admin Login
                 </button>
               )}
             </div>

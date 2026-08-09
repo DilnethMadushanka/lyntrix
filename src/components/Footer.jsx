@@ -59,21 +59,13 @@ export default function Footer({ onOpenAdminLogin, isAdminLoggedIn, onOpenAdminD
                 <span>GitHub Repo</span>
               </a>
 
-              {isAdminLoggedIn ? (
+              {isAdminLoggedIn && (
                 <button
                   onClick={onOpenAdminDashboard}
                   className="p-2 rounded-lg bg-cyan-950 text-cyan-300 hover:text-white border border-cyan-800 transition-colors flex items-center gap-1.5 text-xs font-mono font-bold"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   <span>Admin Console</span>
-                </button>
-              ) : (
-                <button
-                  onClick={onOpenAdminLogin}
-                  className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-cyan-400 border border-slate-800 transition-colors flex items-center gap-1.5 text-xs font-mono"
-                >
-                  <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Admin Login</span>
                 </button>
               )}
             </div>
@@ -130,9 +122,6 @@ export default function Footer({ onOpenAdminLogin, isAdminLoggedIn, onOpenAdminD
           <p>© {new Date().getFullYear()} LYNTRIX IT SERVICES. All rights reserved.</p>
 
           <div className="flex items-center gap-6">
-            <button onClick={onOpenAdminLogin} className="hover:text-cyan-400 transition-colors font-mono text-[11px]">
-              Admin Portal
-            </button>
             <a href="#" className="hover:text-slate-200 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-slate-200 transition-colors">Terms of Service</a>
 

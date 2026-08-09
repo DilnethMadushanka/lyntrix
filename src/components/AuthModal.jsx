@@ -55,14 +55,33 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
     setTimeout(() => {
       try {
+        // 1. Check if credentials belong to an Admin in Cloud DB
+        const adminAuth = db.validateAdminCredentials(loginEmail, loginPassword);
+        if (adminAuth && adminAuth.success) {
+          setLoading(false);
+          try { confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
+          const adminProfile = {
+            id: adminAuth.admin.id,
+            name: adminAuth.admin.name,
+            email: adminAuth.admin.email,
+            role: 'Admin',
+            isAdmin: true
+          };
+          db.setCurrentUser(adminProfile);
+          onAuthSuccess(adminProfile, true);
+          onClose();
+          return;
+        }
+
+        // 2. Regular Client login
         const user = db.loginUser(loginEmail, loginPassword);
         setLoading(false);
         try { confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } }); } catch (err) {}
-        onAuthSuccess(user);
+        onAuthSuccess(user, false);
         onClose();
       } catch (err) {
         setLoading(false);
-        setError(err.message || 'Failed to sign in.');
+        setError(err.message || 'Failed to sign in. Invalid email or password.');
       }
     }, 600);
   };

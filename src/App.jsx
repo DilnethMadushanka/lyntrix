@@ -11,7 +11,6 @@ import TestimonialsSection from './components/TestimonialsSection';
 import FAQSection from './components/FAQSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
-import AdminLoginModal from './components/AdminLoginModal';
 import AdminDashboard from './components/AdminDashboard';
 import ProjectTrackerModal from './components/ProjectTrackerModal';
 import AuthModal from './components/AuthModal';
@@ -20,11 +19,14 @@ import { LayoutDashboard } from 'lucide-react';
 
 export default function App() {
   const [estimateData, setEstimateData] = useState(null);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(db.getCurrentUser());
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    const admin = db.getCurrentAdmin();
+    const user = db.getCurrentUser();
+    return !!admin || user?.role === 'Admin';
+  });
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(db.getCurrentUser());
   const [viewMode, setViewMode] = useState('site'); // 'site' or 'admin'
   const [dbTrigger, setDbTrigger] = useState(0);
 
@@ -43,24 +45,29 @@ export default function App() {
     }
   };
 
-  const handleLoginSuccess = () => {
-    setIsAdminLoggedIn(true);
-    setViewMode('admin');
-  };
-
   const handleLogout = () => {
     setIsAdminLoggedIn(false);
     setViewMode('site');
+    db.logoutAdmin();
+    db.logoutUser();
+    setCurrentUser(null);
   };
 
-  const handleAuthSuccess = (user) => {
+  const handleAuthSuccess = (user, isAdmin = false) => {
     setCurrentUser(user);
+    if (isAdmin || user.role === 'Admin') {
+      setIsAdminLoggedIn(true);
+      setViewMode('admin');
+    }
     setDbTrigger(prev => prev + 1);
   };
 
   const handleLogoutUser = () => {
     db.logoutUser();
+    db.logoutAdmin();
     setCurrentUser(null);
+    setIsAdminLoggedIn(false);
+    setViewMode('site');
   };
 
   const triggerDataRefresh = () => {
@@ -95,7 +102,6 @@ export default function App() {
 
       <Navbar
         onOpenCalculator={handleOpenCalculator}
-        onOpenAdminLogin={() => setIsAdminLoginOpen(true)}
         isAdminLoggedIn={isAdminLoggedIn}
         onOpenAdminDashboard={() => setViewMode('admin')}
         onOpenTracker={() => setIsTrackerOpen(true)}
@@ -118,19 +124,11 @@ export default function App() {
       </main>
 
       <Footer
-        onOpenAdminLogin={() => setIsAdminLoginOpen(true)}
         isAdminLoggedIn={isAdminLoggedIn}
         onOpenAdminDashboard={() => setViewMode('admin')}
       />
 
-      {/* Admin Login Modal Dialog */}
-      <AdminLoginModal
-        isOpen={isAdminLoginOpen}
-        onClose={() => setIsAdminLoginOpen(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
-
-      {/* Client User Login / Register Auth Modal */}
+      {/* Unified Login / Register Auth Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}

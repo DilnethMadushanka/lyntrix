@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Menu, X, ArrowRight, Sparkles, Terminal, Lock, LayoutDashboard, Search, User, LogOut } from 'lucide-react';
+import { ShieldCheck, Menu, X, ArrowRight, Sparkles, Terminal, Lock, LayoutDashboard, Search, User, LogOut, AlertTriangle } from 'lucide-react';
 
 export default function Navbar({ 
   onOpenCalculator, 
@@ -9,7 +9,8 @@ export default function Navbar({
   onOpenAuth,
   onOpenUserProfile,
   currentUser,
-  onLogoutUser
+  onLogoutUser,
+  maintenanceConfig
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -45,10 +46,22 @@ export default function Navbar({
 
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? 'bg-[#07090e]/95 backdrop-blur-md border-b border-slate-800/80 py-2.5 sm:py-3 shadow-xl shadow-black/40' 
-          : 'bg-transparent py-3.5 sm:py-5'
+          ? 'bg-[#07090e]/95 backdrop-blur-md border-b border-slate-800/80 shadow-xl shadow-black/40' 
+          : 'bg-gradient-to-b from-slate-950/90 to-transparent'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Top Maintenance Announcement Banner when enabled */}
+        {maintenanceConfig?.enabled && (
+          <div className="bg-gradient-to-r from-amber-950 via-amber-900 to-amber-950 border-b border-amber-500/60 px-4 py-2 text-amber-200 text-xs font-mono text-center flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+            <span className="font-bold text-amber-300 shrink-0">[SERVER MAINTENANCE ACTIVE]</span>
+            <span className="truncate max-w-xl text-white">{maintenanceConfig.message}</span>
+            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-amber-950/90 border border-amber-500/80 text-amber-300 font-bold shrink-0">
+              ETA: {maintenanceConfig.eta}
+            </span>
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-2">
             
             {/* Brand Logo */}

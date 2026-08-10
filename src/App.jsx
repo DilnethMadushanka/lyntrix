@@ -235,18 +235,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-300 relative">
       
-      {/* Top Maintenance Announcement Banner when enabled */}
-      {maintenanceConfig.enabled && (
-        <div className="bg-gradient-to-r from-amber-950 via-amber-900 to-amber-950 border-b border-amber-500/60 p-2.5 sm:p-3 text-amber-200 text-xs font-mono text-center relative z-50 flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-          <span className="font-bold text-amber-300">[SERVER MAINTENANCE ACTIVE]</span>
-          <span className="truncate max-w-xl">{maintenanceConfig.message}</span>
-          <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-amber-950 border border-amber-600/80 text-amber-300 font-bold shrink-0">
-            ETA: {maintenanceConfig.eta}
-          </span>
-        </div>
-      )}
-      
       {/* Floating Admin Switcher when logged in */}
       {isAdminLoggedIn && (
         <div className="fixed bottom-5 right-5 z-50">
@@ -269,6 +257,7 @@ export default function App() {
         onOpenUserProfile={() => setIsProfileOpen(true)}
         currentUser={currentUser}
         onLogoutUser={handleLogoutUser}
+        maintenanceConfig={maintenanceConfig}
       />
 
       <main>

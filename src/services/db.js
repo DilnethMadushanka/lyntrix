@@ -12,7 +12,16 @@ const STORAGE_KEYS = {
   USERS: 'lyntrix_cloud_users',
   CURRENT_USER: 'lyntrix_current_user',
   ADMINS: 'lyntrix_cloud_admins',
-  CURRENT_ADMIN: 'lyntrix_current_admin'
+  CURRENT_ADMIN: 'lyntrix_current_admin',
+  MAINTENANCE: 'lyntrix_cloud_maintenance'
+};
+
+const DEFAULT_MAINTENANCE = {
+  enabled: false,
+  mode: 'banner',
+  message: '⚠️ Scheduled Platform Upgrade in Progress. Systems are undergoing routine maintenance.',
+  eta: '30 Minutes',
+  updatedAt: new Date().toISOString()
 };
 
 // Initial Default Admin Accounts in DB
@@ -689,5 +698,26 @@ export const db = {
 
   logoutAdmin: () => {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_ADMIN);
+  },
+
+  getMaintenanceConfig: () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.MAINTENANCE);
+      return saved ? JSON.parse(saved) : DEFAULT_MAINTENANCE;
+    } catch (e) {
+      return DEFAULT_MAINTENANCE;
+    }
+  },
+
+  saveMaintenanceConfig: (config) => {
+    const updated = {
+      ...config,
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.MAINTENANCE, JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('lyntrix-maintenance-updated'));
+    }
+    return updated;
   }
 };

@@ -16,7 +16,7 @@ import ProjectTrackerModal from './components/ProjectTrackerModal';
 import AuthModal from './components/AuthModal';
 import UserProfileModal from './components/UserProfileModal';
 import { db } from './services/db';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle } from 'lucide-react';
 
 export default function App() {
   const [estimateData, setEstimateData] = useState(null);
@@ -34,6 +34,17 @@ export default function App() {
   const [verificationToast, setVerificationToast] = useState('');
   const [viewMode, setViewMode] = useState('site'); // 'site' or 'admin'
   const [dbTrigger, setDbTrigger] = useState(0);
+
+  // Server Maintenance Mode Config State
+  const [maintenanceConfig, setMaintenanceConfig] = useState(() => db.getMaintenanceConfig());
+
+  useEffect(() => {
+    const syncMaintenance = () => {
+      setMaintenanceConfig(db.getMaintenanceConfig());
+    };
+    window.addEventListener('lyntrix-maintenance-updated', syncMaintenance);
+    return () => window.removeEventListener('lyntrix-maintenance-updated', syncMaintenance);
+  }, []);
 
   // 1-Click Magic Email Verification Link Listener & Cloud DB Sync
   useEffect(() => {
@@ -147,8 +158,94 @@ export default function App() {
     );
   }
 
+  // Check if Full Maintenance Lock Overlay is active (and visitor is not Master Admin)
+  if (maintenanceConfig.enabled && maintenanceConfig.mode === 'full' && !isAdminLoggedIn && viewMode !== 'admin') {
+    return (
+      <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden selection:bg-amber-500/30 selection:text-amber-300 font-sans">
+        {/* Background Cyber Glowing Orbs */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-xl w-full glass-card p-8 sm:p-12 rounded-3xl border border-amber-500/40 text-center space-y-6 relative z-10 shadow-2xl shadow-amber-950/40 animate-in fade-in zoom-in duration-300">
+          
+          <div className="w-20 h-20 rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20">
+            <AlertTriangle className="w-10 h-10 animate-bounce" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/90 border border-amber-600/80 text-xs font-mono text-amber-300 font-bold uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              <span>SYSTEM UPGRADE IN PROGRESS</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-['Outfit']">
+              Scheduled Platform Maintenance
+            </h1>
+          </div>
+
+          <p className="text-sm text-slate-300 font-mono leading-relaxed bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+            {maintenanceConfig.message || '⚠️ Scheduled Platform Upgrade in Progress. Systems are undergoing routine maintenance.'}
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs font-mono">
+            <div>
+              <div className="text-slate-400">ESTIMATED ETA</div>
+              <div className="text-amber-400 font-bold text-base mt-0.5">{maintenanceConfig.eta || '30 Minutes'}</div>
+            </div>
+            <div>
+              <div className="text-slate-400">SECURITY STATUS</div>
+              <div className="text-emerald-400 font-bold text-base mt-0.5">TLS 1.3 Secure</div>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono">
+            <a
+              href="mailto:lyntrixtec@gmail.com"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 text-slate-200 border border-slate-700 hover:text-cyan-400 transition-colors flex items-center justify-center gap-2"
+            >
+              <span>Email Advisory</span>
+            </a>
+            <a
+              href="https://wa.me/94714557857"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800 hover:bg-emerald-900 transition-colors flex items-center justify-center gap-2 font-bold"
+            >
+              <span>Hotline / WhatsApp: +94 71 455 7857</span>
+            </a>
+          </div>
+
+          {/* Admin Login Bypass Link */}
+          <div className="pt-2">
+            <button
+              onClick={() => {
+                setInitialAuthMode('signin');
+                setIsAuthOpen(true);
+              }}
+              className="text-[11px] text-slate-400 hover:text-cyan-400 underline font-mono"
+            >
+              Admin Sign In / Login Bypass
+            </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-300 relative">
+      
+      {/* Top Maintenance Announcement Banner when enabled */}
+      {maintenanceConfig.enabled && (
+        <div className="bg-gradient-to-r from-amber-950 via-amber-900 to-amber-950 border-b border-amber-500/60 p-2.5 sm:p-3 text-amber-200 text-xs font-mono text-center relative z-50 flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40">
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+          <span className="font-bold text-amber-300">[SERVER MAINTENANCE ACTIVE]</span>
+          <span className="truncate max-w-xl">{maintenanceConfig.message}</span>
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-amber-950 border border-amber-600/80 text-amber-300 font-bold shrink-0">
+            ETA: {maintenanceConfig.eta}
+          </span>
+        </div>
+      )}
       
       {/* Floating Admin Switcher when logged in */}
       {isAdminLoggedIn && (

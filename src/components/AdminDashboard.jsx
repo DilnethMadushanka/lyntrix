@@ -41,6 +41,17 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   const [editingPasswordAdmin, setEditingPasswordAdmin] = useState(null);
   const [newPasswordValue, setNewPasswordValue] = useState('');
 
+  // Maintenance Mode Config State
+  const [maintenanceConfig, setMaintenanceConfig] = useState(db.getMaintenanceConfig());
+
+  const handleSaveMaintenanceConfig = (updated) => {
+    const saved = db.saveMaintenanceConfig(updated);
+    setMaintenanceConfig(saved);
+    const modeText = saved.enabled ? `ENABLED (${saved.mode.toUpperCase()} mode)` : 'DISABLED';
+    setSaveNotice(`⚙️ Server Maintenance Mode ${modeText}! Web application updated in real time.`);
+    setTimeout(() => setSaveNotice(''), 4000);
+  };
+
   // Uptime Telemetry States
   const [lastPingTime, setLastPingTime] = useState(new Date().toLocaleTimeString());
   const [pingLatency, setPingLatency] = useState(14);
@@ -1005,6 +1016,108 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                   <span>{isPinging ? 'Pinging Services...' : 'Trigger Manual Health Ping'}</span>
                 </button>
               </div>
+            </div>
+
+            {/* SERVER MAINTENANCE MODE CONTROL PANEL */}
+            <div className="glass-card p-6 rounded-2xl border border-amber-500/40 bg-slate-950/90 space-y-4 shadow-xl shadow-amber-950/20">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                      SERVER MAINTENANCE CONTROL PANEL
+                    </span>
+                  </div>
+                  <h4 className="text-xl font-bold text-white font-['Outfit']">Broadcast Platform Maintenance Notice</h4>
+                  <p className="text-xs text-slate-400 font-mono">
+                    Enable maintenance mode when upgrading servers or pushing deployments to notify users instantly.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveMaintenanceConfig({ ...maintenanceConfig, enabled: !maintenanceConfig.enabled })}
+                    className={`px-5 py-2.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 border ${
+                      maintenanceConfig.enabled
+                        ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-lg shadow-amber-500/30'
+                        : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full ${maintenanceConfig.enabled ? 'bg-slate-950 animate-ping' : 'bg-slate-500'}`} />
+                    <span>{maintenanceConfig.enabled ? 'MAINTENANCE MODE ACTIVE' : 'ENABLE MAINTENANCE MODE'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {maintenanceConfig.enabled && (
+                <div className="space-y-4 pt-1 animate-in fade-in duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    {/* Mode Selector */}
+                    <div>
+                      <label className="text-xs font-mono text-slate-300 block mb-1.5 font-bold">
+                        Notice Display Style *
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveMaintenanceConfig({ ...maintenanceConfig, mode: 'banner' })}
+                          className={`p-3 rounded-xl border text-xs font-mono font-bold text-left transition-all ${
+                            maintenanceConfig.mode === 'banner'
+                              ? 'bg-amber-950/90 text-amber-300 border-amber-500/80 shadow-md'
+                              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                          }`}
+                        >
+                          <div className="text-white font-bold">Top Announcement Banner</div>
+                          <div className="text-[10px] text-slate-400 font-normal">Site accessible + glowing banner</div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSaveMaintenanceConfig({ ...maintenanceConfig, mode: 'full' })}
+                          className={`p-3 rounded-xl border text-xs font-mono font-bold text-left transition-all ${
+                            maintenanceConfig.mode === 'full'
+                              ? 'bg-rose-950/90 text-rose-300 border-rose-500/80 shadow-md'
+                              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                          }`}
+                        >
+                          <div className="text-white font-bold">Full Page Lock Overlay</div>
+                          <div className="text-[10px] text-slate-400 font-normal">Lock site during system upgrades</div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* ETA Input */}
+                    <div>
+                      <label className="text-xs font-mono text-slate-300 block mb-1.5 font-bold">
+                        Estimated Completion Time (ETA) *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 30 Minutes, 1 Hour"
+                        value={maintenanceConfig.eta}
+                        onChange={e => setMaintenanceConfig({ ...maintenanceConfig, eta: e.target.value })}
+                        onBlur={() => handleSaveMaintenanceConfig(maintenanceConfig)}
+                        className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-amber-300 font-mono text-xs focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-mono text-slate-300 block mb-1.5 font-bold">
+                      Custom Maintenance Message to Broadcast *
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={maintenanceConfig.message}
+                      onChange={e => setMaintenanceConfig({ ...maintenanceConfig, message: e.target.value })}
+                      onBlur={() => handleSaveMaintenanceConfig(maintenanceConfig)}
+                      className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:border-amber-400 focus:outline-none resize-none"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Core Services Matrix (4 Status Cards) */}

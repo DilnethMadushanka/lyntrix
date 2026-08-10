@@ -184,7 +184,15 @@ export default function App() {
         <AboutSection />
         <TestimonialsSection />
         <FAQSection />
-        <ContactSection estimateData={estimateData} onInquirySubmitted={triggerDataRefresh} currentUser={currentUser} />
+        <ContactSection
+          estimateData={estimateData}
+          onInquirySubmitted={triggerDataRefresh}
+          currentUser={currentUser}
+          onOpenAuth={(mode = 'signin') => {
+            setInitialAuthMode(mode);
+            setIsAuthOpen(true);
+          }}
+        />
       </main>
 
       <Footer

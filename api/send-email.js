@@ -99,6 +99,28 @@ export default async function handler(req, res) {
                           </tr>
                         </table>
 
+                        ${orderData.hasConsultation ? `
+                          <div style="margin-top: 15px; padding: 15px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px;">
+                            <div style="color: #00F0FF; font-size: 11px; font-weight: bold; font-family: monospace; text-transform: uppercase; margin-bottom: 8px;">
+                              📅 REQUESTED 1-ON-1 ARCHITECTURE CONSULTATION
+                            </div>
+                            <table width="100%" border="0" cellspacing="0" cellpadding="4" style="font-size: 12px; font-family: monospace;">
+                              <tr>
+                                <td style="color: #94A3B8; width: 40%;">Scheduled Date:</td>
+                                <td style="color: #FFFFFF; font-weight: bold;">${orderData.consultationDate}</td>
+                              </tr>
+                              <tr>
+                                <td style="color: #94A3B8;">Time Slot:</td>
+                                <td style="color: #10B981; font-weight: bold;">${orderData.consultationTime}</td>
+                              </tr>
+                              <tr>
+                                <td style="color: #94A3B8;">Meeting Platform:</td>
+                                <td style="color: #A78BFA; font-weight: bold;">${orderData.meetingPlatform}</td>
+                              </tr>
+                            </table>
+                          </div>
+                        ` : ''}
+
                         <div style="margin-top: 15px; padding: 15px; background: #07090E; border: 1px solid #1E293B; border-radius: 10px;">
                           <div style="color: #64748B; font-size: 10px; text-transform: uppercase; margin-bottom: 5px; font-family: monospace;">Client Requirements:</div>
                           <p style="color: #E2E8F0; font-size: 12px; line-height: 1.6; margin: 0; font-family: sans-serif;">${orderData.details}</p>
@@ -124,7 +146,9 @@ export default async function handler(req, res) {
     } else {
       // Client order confirmation
       recipient = orderData.email;
-      subject = `✅ [Proposal Received & Accepted] Lyntrix IT Services: ${orderData.id} - ${orderData.service}`;
+      subject = orderData.hasConsultation 
+        ? `📅 [Confirmed] Lyntrix Consultation & Proposal (${orderData.id}): ${orderData.consultationDate} at ${orderData.consultationTime}`
+        : `✅ [Proposal Received & Accepted] Lyntrix IT Services: ${orderData.id} - ${orderData.service}`;
       htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -173,6 +197,31 @@ export default async function handler(req, res) {
                           </tr>
                         </table>
                       </div>
+
+                      ${orderData.hasConsultation ? `
+                        <div style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.12), rgba(59, 130, 246, 0.12)); border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 16px; padding: 22px; margin: 20px 0;">
+                          <div style="font-family: monospace; font-size: 12px; color: #00F0FF; text-transform: uppercase; font-weight: bold; margin-bottom: 12px;">
+                            📅 CONFIRMED 1-ON-1 ARCHITECTURE CONSULTATION
+                          </div>
+                          <table width="100%" border="0" cellspacing="0" cellpadding="5" style="font-size: 13px; font-family: monospace;">
+                            <tr>
+                              <td style="color: #94A3B8; width: 40%;">Scheduled Date:</td>
+                              <td style="color: #FFFFFF; font-weight: bold; font-size: 14px;">${orderData.consultationDate}</td>
+                            </tr>
+                            <tr>
+                              <td style="color: #94A3B8;">Time Slot:</td>
+                              <td style="color: #10B981; font-weight: bold; font-size: 14px;">${orderData.consultationTime}</td>
+                            </tr>
+                            <tr>
+                              <td style="color: #94A3B8;">Meeting Platform:</td>
+                              <td style="color: #A78BFA; font-weight: bold;">${orderData.meetingPlatform}</td>
+                            </tr>
+                          </table>
+                          <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; color: #CBD5E1; line-height: 1.5;">
+                            ✨ Our Senior Solutions Architect will email you the official calendar invitation and ${orderData.meetingPlatform} meeting link prior to the session.
+                          </div>
+                        </div>
+                      ` : ''}
 
                       <p style="color: #94A3B8; font-size: 13px; line-height: 1.6;">
                         Our Senior Architecture Lead will review your technical specifications and contact you within <strong>24 business hours</strong> to coordinate our discovery session.

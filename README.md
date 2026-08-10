@@ -4,52 +4,81 @@
 > *Innovate • Integrate • Elevate*
 
 [![Repository](https://img.shields.io/badge/GitHub-raveeshaheshan%2Flyntrix-cyan?style=for-the-badge&logo=github)](https://github.com/raveeshaheshan/lyntrix.git)
+[![Database](https://img.shields.io/badge/Supabase-PostgreSQL%20Cloud-emerald?style=for-the-badge&logo=supabase)](https://github.com/raveeshaheshan/lyntrix.git)
 [![Status](https://img.shields.io/badge/SOC-24%2F7%20Online-emerald?style=for-the-badge&logo=shield)](https://github.com/raveeshaheshan/lyntrix.git)
 
 ---
 
 ## 🚀 Overview
 
-**LYNTRIX IT Services** is a next-generation technology provider delivering cutting-edge software development, cloud infrastructure architecture, zero-trust cybersecurity, strategic IT consulting, and 24/7 managed services for modern enterprises.
+**LYNTRIX IT Services** is an enterprise-grade digital platform and technology suite delivering custom software development, cloud infrastructure architecture, zero-trust cybersecurity, strategic IT consulting, and 24/7 managed services. 
 
-### Core Capabilities Matrix
+The platform features a fully integrated **Hybrid Cloud Database Engine (Supabase PostgreSQL)**, **Google OAuth 2.0 & Email Authentication**, an **Interactive Instant Cost Calculator**, a **Client Consultation Booking & Proposal Engine**, and a **Master Admin Sentinel Dashboard** for complete system governance.
 
-1. **Software Development** — Custom web & mobile applications, high-concurrency microservices, micro-frontend architectures, REST & GraphQL APIs.
-2. **Cloud Solutions** — AWS / Azure / GCP migration, automated CI/CD deployment pipelines, Terraform IaC, Kubernetes container orchestration.
-3. **Cybersecurity Shield** — Zero-Trust access controls, continuous penetration testing, SOC 2 & ISO 27001 compliance readiness, real-time threat monitoring.
-4. **IT Consulting & Advisory** — Digital transformation roadmaps, CTO advisory, enterprise architecture optimization.
-5. **24/7 Managed IT Support** — Round-the-clock telemetry monitoring, database backups, <15 minute incident response SLA.
+---
+
+## ✨ Key Platform Features
+
+### 👤 User Authentication & Profile Governance
+- **Multi-Factor Auth Suite**: Google OAuth 2.0 One-Tap & Email/Password sign in.
+- **1-Click Magic Link Verification**: Automated OTP verification for account activation and instant password resets.
+- **Client Workspace**: Manage corporate profile, company name, date of birth / founding date, contact details, and view active project proposals.
+- **Password Security**: Eye logo toggle visibility on all password input fields.
+
+### 💼 Interactive Service Estimator & Proposal Engine
+- **Real-Time Project Cost Calculator**: Instant estimate calculation for Web Development, Cloud Infrastructure, Mobile Apps, Cybersecurity Shields, and Enterprise AI.
+- **Free Consultation Scheduler**: Registered users can schedule a free technical consultation time slot with Lyntrix engineers.
+- **Automated Nodemailer Dispatches**: Instant HTML email templates sent to clients upon proposal submission and admin approval.
+
+### 🛡️ Master Admin Governance Console (`AdminDashboard.jsx`)
+- **User Account Management**: Search, filter, inspect, edit client profiles, reset user passwords, delete accounts, and **Promote Registered Users to Admin** in Cloud DB.
+- **Service & Add-on Price Editor**: Dynamic pricing adjustment for core services and optional features.
+- **Client Proposals & Leads Control**: Review client inquiries, approve/reject proposals, and trigger automated confirmation emails to clients.
+- **Admin DB Credentials**: Secure master admin access key management with eye-toggle password visibility.
+- **Web Uptime & System Sentinel**: Real-time telemetry monitoring for Web Frontend, PostgreSQL Cloud Database, SMTP Relay, and REST APIs, complete with a **90-Day Uptime Bar Timeline** and **Live Log Feed**.
+- **Server Maintenance Mode Control Panel**: 1-Click broadcast for **Top Announcement Banner** or **Full Page Lock Overlay** with custom messages and ETA during platform upgrades.
+
+---
+
+## 📞 Contact Information
+
+- **Official Email**: `lyntrixtec@gmail.com`
+- **Phone / WhatsApp Hotline**: `+94 71 455 7857` (0714557857)
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 18, Vite, Tailwind CSS v4, Lucide Icons, Canvas Confetti
-- **Typography**: Outfit, Inter, Fira Code
-- **Design System**: Dark Mode Glassmorphism, Metallic Silver Accents, Electrical Cyan Glows
+| Layer | Technologies Used |
+| :--- | :--- |
+| **Frontend UI** | React 18, Vite, Tailwind CSS, Lucide Icons, Canvas Confetti |
+| **Cloud Database** | Supabase (PostgreSQL Cloud DB) + Local Storage Fallback Sync |
+| **Authentication** | Google OAuth 2.0, Supabase Auth, Custom OTP Magic Verification |
+| **Email Gateway** | Nodemailer (Gmail SMTP Relay) |
+| **Typography & Styling** | Outfit, Inter, Fira Code, Glassmorphism UI Design System |
 
 ---
 
-## 💻 Local Development
+## 💻 Local Setup & Installation
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/raveeshaheshan/lyntrix.git
 
-# Navigate into project directory
+# 2. Navigate to project directory
 cd lyntrix
 
-# Install dependencies
+# 3. Install project dependencies
 npm install
 
-# Start local development server
+# 4. Start local development server
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`.
+The application will launch locally at `http://localhost:3000`.
 
 ---
 
 ## 📜 License
 
-Distributed under the ISC License. © 2026 LYNTRIX IT SERVICES. All rights reserved.
+Distributed under the ISC License. © 2026 **LYNTRIX IT SERVICES**. All rights reserved.

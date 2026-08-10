@@ -147,7 +147,7 @@ const DEFAULT_USERS = [
     password: 'password123',
     company: 'Lyntrix Global Enterprise',
     birthday: '1998-05-14',
-    phone: '+94 77 123 4567',
+    phone: '+94 71 455 7857',
     country: 'Sri Lanka',
     role: 'Enterprise Client',
     status: 'Active',

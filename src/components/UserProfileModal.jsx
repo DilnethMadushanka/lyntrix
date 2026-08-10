@@ -398,7 +398,7 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
                   <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 absolute left-3 top-3 sm:top-3.5" />
                   <input
                     type="tel"
-                    placeholder="+94 7X XXX XXXX"
+                    placeholder="+94 71 455 7857"
                     value={formData.phone}
                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full pl-9 sm:pl-10 pr-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:border-cyan-400 focus:outline-none transition-colors"

@@ -63,6 +63,30 @@ export const emailService = {
     };
   },
 
+  // 2.5 Send Approved Consultation Email to Client with Google Meet Link
+  sendClientConsultationApproved: async (orderData, meetingLink = 'https://meet.google.com/lyntrix-arch-session') => {
+    console.log(`[NODEMAILER CONSULTATION APPROVED] Dispatching meeting link ${meetingLink} to ${orderData.email}...`);
+
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'consultation_approved',
+          meetingLink,
+          orderData
+        })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Consultation approved email dispatch note:', e);
+    }
+
+    return { success: true, recipient: orderData.email, meetingLink };
+  },
+
   // 3. Send Status Update Email to Client
   sendOrderStatusUpdate: async (orderData, newStatus, customNotes = '') => {
     console.log(`[NODEMAILER STATUS UPDATE] Notifying ${orderData.email} of status change to: ${newStatus}`);

@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     let recipient = '';
 
     if (type === 'admin_alert') {
-      recipient = 'admin@lyntrixtec.com, ' + gmailUser;
+      recipient = 'lyntrixtec@gmail.com, ' + gmailUser;
       subject = `⚡ [NEW PROPOSAL DISPATCH] ${orderData.id} - ${orderData.name} (${orderData.service})`;
       htmlContent = `
         <!DOCTYPE html>
@@ -236,6 +236,92 @@ export default async function handler(req, res) {
                       </p>
                       <p style="margin: 0; color: #64748B; font-size: 11px;">
                         Enterprise Architecture • <a href="https://lyntrixtec.com" style="color: #00F0FF; text-decoration: none;">lyntrixtec.com</a>
+                      </p>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+    } else if (type === 'consultation_approved') {
+      recipient = orderData.email;
+      const meetingLink = req.body.meetingLink || 'https://meet.google.com/lyntrix-arch-session';
+      subject = `📅 [CONFIRMED] Lyntrix Architecture Consultation: ${orderData.consultationDate || 'Tomorrow'} at ${orderData.consultationTime || '10:00 AM'}`;
+      htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <body style="margin: 0; padding: 0; background-color: #05070B; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #05070B; padding: 40px 15px;">
+            <tr>
+              <td align="center">
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background: #0A0E17; border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+                  
+                  <tr><td height="4" style="background: linear-gradient(90deg, #00F0FF, #10B981, #A78BFA);"></td></tr>
+
+                  <tr>
+                    <td style="padding: 35px 40px 15px 40px; text-align: center;">
+                      <div style="display: inline-block; padding: 10px 18px; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 12px; margin-bottom: 12px;">
+                        <span style="font-family: monospace; font-size: 16px; font-weight: 800; color: #00F0FF;">📅 CONSULTATION APPROVED & CONFIRMED</span>
+                      </div>
+                      <h2 style="color: #FFFFFF; font-size: 22px; margin: 10px 0 5px 0;">1-on-1 Architecture Discovery Call</h2>
+                      <p style="color: #64748B; font-size: 11px; font-family: monospace;">LYNTRIX EXECUTIVE ADVISORY</p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding: 10px 40px 30px 40px;">
+                      <p style="color: #CBD5E1; font-size: 14px; line-height: 1.6;">
+                        Dear <strong>${orderData.name}</strong>,<br><br>
+                        Great news! Your request for a <strong>Free 1-on-1 Architecture Consultation</strong> has been reviewed and officially approved by our Senior Solutions Lead.
+                      </p>
+
+                      <div style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.12), rgba(16, 185, 129, 0.12)); border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 16px; padding: 22px; margin: 20px 0;">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="6" style="font-size: 13px; font-family: monospace;">
+                          <tr>
+                            <td style="color: #94A3B8; width: 40%;">Confirmed Date:</td>
+                            <td style="color: #FFFFFF; font-weight: bold; font-size: 15px;">${orderData.consultationDate || 'As Requested'}</td>
+                          </tr>
+                          <tr>
+                            <td style="color: #94A3B8;">Confirmed Time Slot:</td>
+                            <td style="color: #10B981; font-weight: bold; font-size: 15px;">${orderData.consultationTime || '10:00 AM IST'}</td>
+                          </tr>
+                          <tr>
+                            <td style="color: #94A3B8;">Meeting Platform:</td>
+                            <td style="color: #A78BFA; font-weight: bold;">${orderData.meetingPlatform || 'Google Meet'}</td>
+                          </tr>
+                          <tr>
+                            <td style="color: #94A3B8;">Booking Reference:</td>
+                            <td style="color: #00F0FF; font-weight: bold;">${orderData.id}</td>
+                          </tr>
+                        </table>
+                      </div>
+
+                      <div style="text-align: center; margin: 30px 0 20px 0;">
+                        <a href="${meetingLink}" target="_blank" style="display: inline-block; padding: 14px 28px; background: linear-gradient(90deg, #00F0FF, #3B82F6); color: #05070B; font-family: monospace; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 240, 255, 0.3);">
+                          🎥 JOIN VIDEO CALL LINK
+                        </a>
+                        <div style="margin-top: 8px; font-size: 11px; font-family: monospace; color: #64748B;">
+                          Direct Link: <a href="${meetingLink}" style="color: #00F0FF;">${meetingLink}</a>
+                        </div>
+                      </div>
+
+                      <p style="color: #94A3B8; font-size: 12px; line-height: 1.6;">
+                        <strong>Need to reschedule?</strong> Contact our hotline or WhatsApp at <strong>+94 71 455 7857</strong> or email <strong>lyntrixtec@gmail.com</strong>.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding: 20px 40px 30px 40px; border-top: 1px solid #1E293B; text-align: center;">
+                      <p style="margin: 0 0 5px 0; color: #475569; font-size: 11px; font-family: monospace;">
+                        © ${new Date().getFullYear()} LYNTRIX IT SERVICES. All rights reserved.
+                      </p>
+                      <p style="margin: 0; color: #64748B; font-size: 11px;">
+                        Enterprise Architecture • Hotline/WhatsApp: +94 71 455 7857 • lyntrixtec@gmail.com
                       </p>
                     </td>
                   </tr>

@@ -40,8 +40,14 @@ export default function Footer({ onOpenAdminLogin, isAdminLoggedIn, onOpenAdminD
               Engineering resilient custom software, high-concurrency cloud architectures, and zero-trust cybersecurity for modern global organizations.
             </p>
 
-            <div className="text-xs font-mono text-cyan-400 pt-1">
-              INNOVATE • INTEGRATE • ELEVATE
+            <div className="text-xs font-mono text-cyan-400 pt-1 space-y-1">
+              <div>INNOVATE • INTEGRATE • ELEVATE</div>
+              <div className="text-slate-300 font-sans text-xs">
+                Email: <a href="mailto:lyntrixtec@gmail.com" className="text-cyan-400 font-mono hover:underline">lyntrixtec@gmail.com</a>
+              </div>
+              <div className="text-slate-300 font-sans text-xs">
+                Hotline / WhatsApp: <a href="https://wa.me/94714557857" target="_blank" rel="noopener noreferrer" className="text-emerald-400 font-mono hover:underline font-bold">+94 71 455 7857</a>
+              </div>
             </div>
 
             {/* Social & Git Repo */}

@@ -3,7 +3,7 @@ import {
   Users, DollarSign, Activity, ShieldCheck, Search, Filter, Plus, 
   Trash2, Edit, CheckCircle2, AlertTriangle, Eye, EyeOff, Key, ArrowLeft, Download, 
   RefreshCcw, Server, Cpu, Database, Lock, LogOut, Sparkles, Save, Check,
-  UserPlus, UserCheck, Calendar, Building, Globe, Phone, UserX, Mail, Send
+  UserPlus, UserCheck, Calendar, Building, Globe, Phone, UserX, Mail, Send, Video
 } from 'lucide-react';
 import { db } from '../services/db';
 import { emailService } from '../services/emailService';
@@ -16,6 +16,8 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   const [editingUser, setEditingUser] = useState(null);
   const [resettingUserPassword, setResettingUserPassword] = useState(null);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
+  const [approvingConsultation, setApprovingConsultation] = useState(null);
+  const [meetingLinkInput, setMeetingLinkInput] = useState('https://meet.google.com/lyntrix-arch-session');
   const [newUserModalOpen, setNewUserModalOpen] = useState(false);
 
   // Password visibility states
@@ -226,9 +228,38 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
     setTimeout(() => setSaveNotice(''), 4000);
   };
 
+  const handleApproveConsultationSubmit = async (e) => {
+    e.preventDefault();
+    if (!approvingConsultation) return;
+
+    const lead = approvingConsultation;
+    const updatedInquiries = inquiries.map(item => {
+      if (item.id === lead.id) {
+        return {
+          ...item,
+          status: 'Accepted',
+          consultationStatus: 'Approved',
+          meetingLink: meetingLinkInput
+        };
+      }
+      return item;
+    });
+
+    setInquiries(updatedInquiries);
+    await db.saveInquiries(updatedInquiries);
+    if (onDataUpdated) onDataUpdated();
+
+    // Dispatch Official Approved Email to Client with Google Meet link!
+    await emailService.sendClientConsultationApproved({ ...lead, meetingLink: meetingLinkInput }, meetingLinkInput);
+
+    setSaveNotice(`✅ Consultation for ${lead.name} (${lead.email}) APPROVED! Confirmation email with meeting link dispatched.`);
+    setApprovingConsultation(null);
+    setTimeout(() => setSaveNotice(''), 5000);
+  };
+
   const handleOpenDirectGmail = (lead) => {
     const subject = `Lyntrix IT Services: Update Regarding Your Proposal [${lead.id}] - ${lead.service}`;
-    const body = `Dear ${lead.name},\n\nThank you for choosing Lyntrix IT Services for your ${lead.service} project (${lead.scale || 'Enterprise'}).\n\nWe have reviewed your project requirements:\n"${lead.details}"\n\nOur Senior Solutions Architecture Lead has accepted your scope and is ready to schedule our technical discovery call.\n\nProposal Tracking ID: ${lead.id}\nEstimated Investment: ${lead.budget}\nClient Contact: ${lead.phone || lead.email}\n\nBest regards,\nLyntrix Architecture & Engineering Advisory Team\nadmin@lyntrixtec.com | https://lyntrixtec.com`;
+    const body = `Dear ${lead.name},\n\nThank you for choosing Lyntrix IT Services for your ${lead.service} project (${lead.scale || 'Enterprise'}).\n\nWe have reviewed your project requirements:\n"${lead.details}"\n\nOur Senior Solutions Architecture Lead has accepted your scope and is ready to schedule our technical discovery call.\n\nProposal Tracking ID: ${lead.id}\nEstimated Investment: ${lead.budget}\nClient Contact: ${lead.phone || lead.email}\n\nBest regards,\nLyntrix Architecture & Engineering Advisory Team\nlyntrixtec@gmail.com | Hotline & WhatsApp: +94 71 455 7857`;
     emailService.openDirectGmailComposer(lead.email, subject, body);
   };
 
@@ -696,6 +727,20 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                             </select>
                           </td>
                           <td className="p-4 text-right space-x-2 whitespace-nowrap">
+                            {lead.hasConsultation && lead.consultationStatus !== 'Approved' && (
+                              <button
+                                onClick={() => {
+                                  setApprovingConsultation(lead);
+                                  setMeetingLinkInput('https://meet.google.com/lyntrix-arch-session');
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 text-xs font-mono font-bold border border-cyan-500/80 transition-all inline-flex items-center gap-1 shadow-lg shadow-cyan-500/20"
+                                title="Approve Consultation and Send Google Meet confirmation email to Client"
+                              >
+                                <Video className="w-3.5 h-3.5 text-cyan-400" />
+                                <span>Approve Consultation</span>
+                              </button>
+                            )}
+
                             {lead.status !== 'Accepted' && (
                               <button
                                 onClick={() => handleAcceptOrder(lead)}
@@ -951,7 +996,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                   <label className="text-slate-300 font-mono block mb-1">Phone Number</label>
                   <input
                     type="text"
-                    placeholder="+94 77 123 4567"
+                    placeholder="+94 71 455 7857"
                     value={newUserData.phone}
                     onChange={e => setNewUserData({ ...newUserData, phone: e.target.value })}
                     className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
@@ -1312,6 +1357,83 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* APPROVE CONSULTATION MODAL */}
+      {approvingConsultation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="glass-card max-w-md w-full p-6 rounded-2xl border border-cyan-500/50 space-y-4 shadow-2xl shadow-cyan-950">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                  APPROVE 1-ON-1 CONSULTATION • {approvingConsultation.id}
+                </span>
+                <h3 className="text-lg font-bold text-white font-['Outfit']">{approvingConsultation.name}</h3>
+              </div>
+              <button
+                onClick={() => setApprovingConsultation(null)}
+                className="w-7 h-7 rounded-lg bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-slate-950/90 rounded-xl border border-slate-800 space-y-2 text-xs font-mono">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Client Email:</span>
+                <span className="text-white font-bold">{approvingConsultation.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Scheduled Date:</span>
+                <span className="text-cyan-400 font-bold">{approvingConsultation.consultationDate || 'Tomorrow'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Time Slot:</span>
+                <span className="text-emerald-400 font-bold">{approvingConsultation.consultationTime || '10:00 AM - 10:30 AM'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Platform:</span>
+                <span className="text-indigo-400 font-bold">{approvingConsultation.meetingPlatform || 'Google Meet'}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleApproveConsultationSubmit} className="space-y-4 text-xs font-mono">
+              <div className="space-y-1.5">
+                <label className="text-slate-300 block font-bold">
+                  Enter Video Meeting Join Link (Google Meet / Zoom) *
+                </label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://meet.google.com/xyz-abc-123"
+                  value={meetingLinkInput}
+                  onChange={e => setMeetingLinkInput(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-cyan-300 font-mono text-xs focus:border-cyan-400 focus:outline-none"
+                />
+                <p className="text-[10px] text-slate-500">
+                  This meeting link will be embedded into the official HTML Confirmation email sent directly to {approvingConsultation.email}.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setApprovingConsultation(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-slate-400 font-mono text-xs hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="glow-btn px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-500 text-slate-950 font-bold font-mono text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Approve & Dispatch Email</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

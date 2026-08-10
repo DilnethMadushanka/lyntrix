@@ -73,7 +73,7 @@ export default function App() {
               email: email,
               company: 'Verified Corporate Client',
               birthday: '1998-05-14',
-              phone: '+94 7X XXX XXXX',
+              phone: '+94 71 455 7857',
               country: 'Sri Lanka',
               role: 'Client',
               status: 'Active',

@@ -346,8 +346,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     } else {
       setLoading(false);
       if (!googleEmail) {
-        setGoogleEmail('lyntrixtec@gmail.com');
-        setGoogleName('Lyntrix Technology');
+        setGoogleEmail('raveeshaheshan26@gmail.com');
+        setGoogleName('Raveesha Heshan');
       }
       setMode('google_prompt');
     }
@@ -480,8 +480,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               type="button"
               onClick={() => {
                 if (!googleEmail) {
-                  setGoogleEmail('lyntrixtec@gmail.com');
-                  setGoogleName('Lyntrix Technology');
+                  setGoogleEmail('raveeshaheshan26@gmail.com');
+                  setGoogleName('Raveesha Heshan');
                 }
                 setMode('google_prompt');
               }}

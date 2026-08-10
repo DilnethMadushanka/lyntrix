@@ -277,24 +277,21 @@ export const db = {
     }
   },
 
-  saveInquiries: (inquiries) => {
+  saveInquiries: async (inquiries) => {
     try {
       localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries));
-    } catch (e) {}
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('inquiries').upsert(inquiries);
+      }
+    } catch (e) {
+      console.warn('[SUPABASE INQUIRIES UPSERT NOTE]:', e.message);
+    }
   },
 
   addInquiry: async (newInquiry) => {
     const inquiries = db.getInquiries();
     const updated = [newInquiry, ...inquiries];
-    db.saveInquiries(updated);
-
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await supabase.from('inquiries').insert([newInquiry]);
-      } catch (e) {
-        console.warn('Supabase inquiry insert note:', e);
-      }
-    }
+    await db.saveInquiries(updated);
     return updated;
   },
 
@@ -306,7 +303,7 @@ export const db = {
       }
       return item;
     });
-    db.saveInquiries(updated);
+    await db.saveInquiries(updated);
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -319,7 +316,7 @@ export const db = {
   deleteInquiry: async (inquiryId) => {
     const inquiries = db.getInquiries();
     const updated = inquiries.filter(item => item.id !== inquiryId);
-    db.saveInquiries(updated);
+    await db.saveInquiries(updated);
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -339,10 +336,15 @@ export const db = {
     }
   },
 
-  saveUsers: (users) => {
+  saveUsers: async (users) => {
     try {
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    } catch (e) {}
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('users').upsert(users);
+      }
+    } catch (e) {
+      console.warn('[SUPABASE USERS UPSERT NOTE]:', e.message);
+    }
   },
 
   registerUser: async (userData) => {

@@ -83,7 +83,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   };
 
   // User Management Handlers
-  const handleToggleUserStatus = (userId) => {
+  const handleToggleUserStatus = async (userId) => {
     const updated = users.map(u => {
       if (u.id === userId) {
         const nextStatus = u.status === 'Active' ? 'Suspended' : 'Active';
@@ -92,13 +92,13 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
       return u;
     });
     setUsers(updated);
-    db.saveUsers(updated);
+    await db.saveUsers(updated);
   };
 
-  const handleUserRoleChange = (userId, newRole) => {
+  const handleUserRoleChange = async (userId, newRole) => {
     const updated = users.map(u => u.id === userId ? { ...u, role: newRole } : u);
     setUsers(updated);
-    db.saveUsers(updated);
+    await db.saveUsers(updated);
   };
 
   const handleDeleteUser = async (userId) => {

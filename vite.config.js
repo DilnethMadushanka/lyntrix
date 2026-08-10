@@ -90,7 +90,7 @@ function nodemailerDevServer() {
                           </tr>
                           <tr>
                             <td style="padding: 20px 40px 30px 40px; border-top: 1px solid #1E293B; text-align: center; color: #475569; font-size: 11px; font-family: monospace;">
-                              © ${new Date().getFullYear()} LYNTRIX IT SERVICES • dilnethmadushanka.online
+                              © ${new Date().getFullYear()} LYNTRIX IT SERVICES • lyntrixtec.com
                             </td>
                           </tr>
                         </table>
@@ -136,7 +136,7 @@ function nodemailerDevServer() {
                 auth: { user: gmailUser, pass: gmailPass }
               });
 
-              let recipient = type === 'admin_alert' ? `admin@lyntrix.tech, ${gmailUser}` : orderData.email;
+              let recipient = type === 'admin_alert' ? `admin@lyntrixtec.com, ${gmailUser}` : orderData.email;
               let subject = type === 'admin_alert' 
                 ? `⚡ [NEW PROPOSAL] ${orderData.id} - ${orderData.name} (${orderData.service})`
                 : `✅ [Proposal Received] Lyntrix IT Services: ${orderData.id} - ${orderData.service}`;

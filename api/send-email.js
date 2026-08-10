@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     let recipient = '';
 
     if (type === 'admin_alert') {
-      recipient = 'admin@lyntrix.tech, ' + gmailUser;
+      recipient = 'admin@lyntrixtec.com, ' + gmailUser;
       subject = `⚡ [NEW PROPOSAL DISPATCH] ${orderData.id} - ${orderData.name} (${orderData.service})`;
       htmlContent = `
         <!DOCTYPE html>
@@ -186,7 +186,7 @@ export default async function handler(req, res) {
                         © ${new Date().getFullYear()} LYNTRIX IT SERVICES. All rights reserved.
                       </p>
                       <p style="margin: 0; color: #64748B; font-size: 11px;">
-                        Enterprise Architecture • <a href="https://dilnethmadushanka.online" style="color: #00F0FF; text-decoration: none;">dilnethmadushanka.online</a>
+                        Enterprise Architecture • <a href="https://lyntrixtec.com" style="color: #00F0FF; text-decoration: none;">lyntrixtec.com</a>
                       </p>
                     </td>
                   </tr>

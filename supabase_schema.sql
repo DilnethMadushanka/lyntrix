@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS public.admins (
 -- Insert Default Admins
 INSERT INTO public.admins (id, name, email, password, role, status, "createdDate")
 VALUES 
-  ('ADM-001', 'Dilneth Madushanka', 'admin@lyntrix.tech', 'admin123', 'Master Admin', 'Active', '2026-08-01'),
-  ('ADM-002', 'Dilneth Madushanka', 'dilneth@lyntrix.tech', 'admin123', 'Master Admin', 'Active', '2026-08-01')
+  ('ADM-001', 'Dilneth Madushanka', 'admin@lyntrixtec.com', 'admin123', 'Master Admin', 'Active', '2026-08-01'),
+  ('ADM-002', 'Dilneth Madushanka', 'dilneth@lyntrixtec.com', 'admin123', 'Master Admin', 'Active', '2026-08-01')
 ON CONFLICT (email) DO NOTHING;
 
 -- 4. Create Services Table (Pricing Matrix)

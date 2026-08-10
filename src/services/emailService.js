@@ -30,7 +30,7 @@ export const emailService = {
       success: true,
       messageId: `adm_msg_${Math.random().toString(36).substring(2, 10)}`,
       timestamp: new Date().toLocaleTimeString(),
-      recipient: 'admin@lyntrix.tech',
+      recipient: 'admin@lyntrixtec.com',
       adminUser: gmailUser,
       realEmailSent: true
     };
@@ -111,7 +111,7 @@ export const emailService = {
           toEmail: userEmail,
           otpCode,
           purpose,
-          origin: typeof window !== 'undefined' ? window.location.origin : 'https://dilnethmadushanka.online'
+          origin: typeof window !== 'undefined' ? window.location.origin : 'https://lyntrixtec.com'
         })
       });
 

@@ -3,8 +3,8 @@
 > **Smart Solutions. Stronger Tomorrow.**  
 > *Innovate • Integrate • Elevate*
 
-[![Repository](https://img.shields.io/badge/GitHub-DilnethMadushanka%2Flyntrix-cyan?style=for-the-badge&logo=github)](https://github.com/DilnethMadushanka/lyntrix.git)
-[![Status](https://img.shields.io/badge/SOC-24%2F7%20Online-emerald?style=for-the-badge&logo=shield)](https://github.com/DilnethMadushanka/lyntrix.git)
+[![Repository](https://img.shields.io/badge/GitHub-raveeshaheshan%2Flyntrix-cyan?style=for-the-badge&logo=github)](https://github.com/raveeshaheshan/lyntrix.git)
+[![Status](https://img.shields.io/badge/SOC-24%2F7%20Online-emerald?style=for-the-badge&logo=shield)](https://github.com/raveeshaheshan/lyntrix.git)
 
 ---
 
@@ -34,7 +34,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/DilnethMadushanka/lyntrix.git
+git clone https://github.com/raveeshaheshan/lyntrix.git
 
 # Navigate into project directory
 cd lyntrix

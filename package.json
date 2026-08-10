@@ -11,15 +11,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DilnethMadushanka/lyntrix.git"
+    "url": "git+https://github.com/raveeshaheshan/lyntrix.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/DilnethMadushanka/lyntrix/issues"
+    "url": "https://github.com/raveeshaheshan/lyntrix/issues"
   },
-  "homepage": "https://github.com/DilnethMadushanka/lyntrix#readme",
+  "homepage": "https://github.com/raveeshaheshan/lyntrix#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
     "canvas-confetti": "^1.9.4",

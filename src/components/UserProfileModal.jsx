@@ -14,6 +14,7 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
   // Profile Form States
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     email: '',
     company: '',
     birthday: '',
@@ -52,6 +53,7 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
     if (currentUser && isOpen) {
       setFormData({
         name: currentUser.name || '',
+        username: currentUser.username || currentUser.email?.split('@')[0] || '',
         email: currentUser.email || '',
         company: currentUser.company || '',
         birthday: currentUser.birthday || '',
@@ -83,6 +85,7 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
       const updated = db.updateUserProfile({
         ...currentUser,
         name: formData.name,
+        username: formData.username,
         company: formData.company,
         birthday: formData.birthday,
         phone: formData.phone,
@@ -128,7 +131,24 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
     setPasswordStep('otp');
   };
 
-  // Handle OTP Digit Input Change (Optimized for Mobile Keyboards)
+  // Handle OTP Paste Event
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').trim();
+    if (!/^\d+$/.test(pastedData)) return;
+    const digits = pastedData.slice(0, 6).split('');
+    const newDigits = ['', '', '', '', '', ''];
+    digits.forEach((d, idx) => {
+      if (idx < 6) newDigits[idx] = d;
+    });
+    setOtpDigits(newDigits);
+    const code = newDigits.join('');
+    if (code.length === 6) {
+      executeVerifyPasswordOtp(code);
+    }
+  };
+
+  // Handle OTP Digit Input Change with Auto-Verification
   const handleOtpDigitChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const newDigits = [...otpDigits];
@@ -138,6 +158,11 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
     if (value && index < 5) {
       otpInputsRef.current[index + 1]?.focus();
     }
+
+    const code = newDigits.join('');
+    if (code.length === 6) {
+      executeVerifyPasswordOtp(code);
+    }
   };
 
   const handleOtpKeyDown = (index, e) => {
@@ -146,18 +171,15 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
     }
   };
 
-  // Step 2: Verify OTP & Save New Password
-  const handleVerifyPasswordOtp = (e) => {
-    e.preventDefault();
+  const executeVerifyPasswordOtp = (codeToVerify) => {
     setError('');
-    const enteredOtp = otpDigits.join('');
 
-    if (enteredOtp.length < 6) {
+    if (codeToVerify.length < 6) {
       setError('Please enter all 6 digits of the OTP verification code.');
       return;
     }
 
-    if (enteredOtp !== generatedOtp) {
+    if (codeToVerify !== generatedOtp) {
       setError('Invalid OTP code. Please check your verification email and try again.');
       return;
     }
@@ -177,6 +199,12 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
       setLoading(false);
       setError(err.message || 'Failed to update password.');
     }
+  };
+
+  // Step 2: Verify OTP & Save New Password
+  const handleVerifyPasswordOtp = (e) => {
+    e.preventDefault();
+    executeVerifyPasswordOtp(otpDigits.join(''));
   };
 
   const handleResendOtp = async () => {
@@ -217,6 +245,9 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
           <div className="text-center sm:text-left space-y-1 w-full">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
               <h3 className="text-lg sm:text-xl font-bold text-white font-['Outfit']">{currentUser.name}</h3>
+              <span className="text-xs font-mono text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-800/80">
+                @{currentUser.username || currentUser.email?.split('@')[0]}
+              </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">
                 {currentUser.role || 'Client'}
               </span>
@@ -300,6 +331,21 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                     className="w-full pl-9 sm:pl-10 pr-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:border-cyan-400 focus:outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-300 block text-[11px] sm:text-xs">Username (@handle) *</label>
+                <div className="relative">
+                  <span className="text-cyan-400 font-mono text-xs font-bold absolute left-3.5 top-2.5 sm:top-3">@</span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. dilneth"
+                    value={formData.username}
+                    onChange={e => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '') })}
+                    className="w-full pl-8 sm:pl-9 pr-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-900 border border-slate-800 text-cyan-300 text-xs font-mono focus:border-cyan-400 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -470,7 +516,7 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
                 </div>
 
                 {/* 6 Single-Digit Input Boxes (Mobile & Tablet Screen Scaled) */}
-                <div className="flex justify-center gap-1.5 sm:gap-2.5">
+                <div className="flex justify-center gap-1.5 sm:gap-2.5" onPaste={handleOtpPaste}>
                   {otpDigits.map((digit, idx) => (
                     <input
                       key={idx}

@@ -164,7 +164,24 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     setMode('otp_verify');
   };
 
-  // Handle OTP Digit Input Change
+  // Handle OTP Paste Event
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').trim();
+    if (!/^\d+$/.test(pastedData)) return;
+    const digits = pastedData.slice(0, 6).split('');
+    const newDigits = ['', '', '', '', '', ''];
+    digits.forEach((d, idx) => {
+      if (idx < 6) newDigits[idx] = d;
+    });
+    setOtpDigits(newDigits);
+    const code = newDigits.join('');
+    if (code.length === 6) {
+      triggerVerifyOtp(code);
+    }
+  };
+
+  // Handle OTP Digit Input Change with Auto-Verification
   const handleOtpDigitChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const newDigits = [...otpDigits];
@@ -175,6 +192,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     if (value && index < 5) {
       otpInputsRef.current[index + 1]?.focus();
     }
+
+    const code = newDigits.join('');
+    if (code.length === 6) {
+      triggerVerifyOtp(code);
+    }
   };
 
   const handleOtpKeyDown = (index, e) => {
@@ -183,18 +205,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     }
   };
 
-  // Verify 6-Digit OTP Code
-  const handleVerifyOtp = (e) => {
-    e.preventDefault();
+  const triggerVerifyOtp = (codeToVerify) => {
     setError('');
-    const enteredOtp = otpDigits.join('');
 
-    if (enteredOtp.length < 6) {
+    if (codeToVerify.length < 6) {
       setError('Please enter all 6 digits of the OTP verification code.');
       return;
     }
 
-    if (enteredOtp !== generatedOtp) {
+    if (codeToVerify !== generatedOtp) {
       setError('Invalid OTP code. Please check your verification code and try again.');
       return;
     }
@@ -205,12 +224,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
       setLoading(false);
 
       if (otpPurpose === 'forgot_password') {
-        // Transition to Set New Password screen
         setMode('set_new_password');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        // Regular Registration
         try {
           const newUser = db.registerUser(pendingUserData);
           try { confetti({ particleCount: 110, spread: 85, origin: { y: 0.6 } }); } catch (err) {}
@@ -220,7 +237,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
           setError(err.message || 'Registration failed.');
         }
       }
-    }, 600);
+    }, 400);
+  };
+
+  // Verify 6-Digit OTP Code
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    triggerVerifyOtp(otpDigits.join(''));
   };
 
   // Handle Set New Password Submission
@@ -274,7 +297,12 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     setError('');
     setLoading(true);
 
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '983789548026-llbj7i3v3ub2ut1rakgti26ammqb3quo.apps.googleusercontent.com';
+    if (!googleEmail) {
+      setGoogleEmail('gamingmads0103@gmail.com');
+      setGoogleName('Dilneth Madushanka');
+    }
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1087051735660-iupg8tuvqp0bebkh6mda98borimo9ipn.apps.googleusercontent.com';
 
     if (window.google && window.google.accounts && window.google.accounts.oauth2) {
       try {
@@ -308,7 +336,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               setMode('google_prompt');
             }
           },
-          error_callback: () => {
+          error_callback: (err) => {
+            console.warn('Google OAuth origin_mismatch or popup error:', err);
             setLoading(false);
             setMode('google_prompt');
           }
@@ -531,7 +560,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
             </div>
 
             {/* 6 Single-Digit Input Boxes */}
-            <div className="flex justify-center gap-2 sm:gap-3">
+            <div className="flex justify-center gap-2 sm:gap-3" onPaste={handleOtpPaste}>
               {otpDigits.map((digit, idx) => (
                 <input
                   key={idx}
@@ -647,6 +676,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               <p className="text-slate-400">
                 Confirm your Google account details to save your identity profile to Cloud DB.
               </p>
+              <div className="mt-2 p-2 rounded bg-amber-950/60 border border-amber-500/40 text-[10px] text-amber-300">
+                ⚡ Note for Developers: If Google OAuth returned <strong>origin_mismatch (Error 400)</strong>, add <code className="text-cyan-400">http://localhost:3000</code> and <code className="text-cyan-400">https://lyntrixtec.com</code> to <em>Authorized JavaScript Origins</em> in Google Cloud Console.
+              </div>
             </div>
 
             <div className="space-y-1.5">

@@ -19,7 +19,7 @@ const STORAGE_KEYS = {
 const DEFAULT_ADMINS = [
   {
     id: 'ADM-001',
-    email: 'admin@lyntrix.tech',
+    email: 'admin@lyntrixtec.com',
     password: 'admin123',
     name: 'Super Admin',
     role: 'Master Admin',
@@ -28,7 +28,7 @@ const DEFAULT_ADMINS = [
   },
   {
     id: 'ADM-002',
-    email: 'dilneth@lyntrix.tech',
+    email: 'dilneth@lyntrixtec.com',
     password: 'admin123',
     name: 'Dilneth Madushanka',
     role: 'Lead Architect & Admin',

@@ -110,8 +110,8 @@ export default function ContactSection({ estimateData, onInquirySubmitted, curre
                 </div>
                 <div>
                   <div className="text-[10px] sm:text-xs text-slate-400 font-mono uppercase">Direct Advisory Email</div>
-                  <a href="mailto:contact@lyntrix.tech" className="text-xs sm:text-sm font-bold text-white hover:text-cyan-400 font-mono">
-                    contact@lyntrix.tech
+                  <a href="mailto:contact@lyntrixtec.com" className="text-xs sm:text-sm font-bold text-white hover:text-cyan-400 font-mono">
+                    contact@lyntrixtec.com
                   </a>
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function ContactSection({ estimateData, onInquirySubmitted, curre
                 </button>
 
                 <p className="text-[10px] sm:text-[11px] text-slate-400 text-center font-mono">
-                  📧 Automatically sends instant notification to admin@lyntrix.tech.
+                  📧 Automatically sends instant notification to admin@lyntrixtec.com.
                 </p>
 
               </form>

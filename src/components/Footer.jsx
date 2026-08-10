@@ -47,7 +47,7 @@ export default function Footer({ onOpenAdminLogin, isAdminLoggedIn, onOpenAdminD
             {/* Social & Git Repo */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <a
-                href="https://github.com/DilnethMadushanka/lyntrix.git"
+                href="https://github.com/raveeshaheshan/lyntrix.git"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 transition-colors flex items-center gap-1.5 text-xs font-mono"

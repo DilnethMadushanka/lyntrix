@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     }
 
     // Build 1-Click Verification URL
-    const siteUrl = origin || process.env.SITE_URL || 'https://dilnethmadushanka.online';
+    const siteUrl = origin || process.env.SITE_URL || 'https://lyntrixtec.com';
     const verifyLink = `${siteUrl}/?verify_otp=${otpCode}&email=${encodeURIComponent(toEmail)}&action=${actionType}`;
 
     const htmlContent = `
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
                       © ${new Date().getFullYear()} LYNTRIX IT SERVICES. All rights reserved.
                     </p>
                     <p style="margin: 0; color: #64748B; font-size: 11px;">
-                      Automated Cryptographic Dispatch • <a href="https://dilnethmadushanka.online" style="color: #00F0FF; text-decoration: none;">dilnethmadushanka.online</a>
+                      Automated Cryptographic Dispatch • <a href="https://lyntrixtec.com" style="color: #00F0FF; text-decoration: none;">lyntrixtec.com</a>
                     </p>
                   </td>
                 </tr>

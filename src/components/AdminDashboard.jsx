@@ -44,7 +44,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   // System Telemetry Logs
   const [logs, setLogs] = useState([
     { id: 1, time: new Date().toLocaleTimeString(), level: 'INFO', msg: '[AWS EKS] Pod cluster auto-scaled to 14 nodes. CPU load 34%.' },
-    { id: 2, time: '20:51:04', level: 'SUCCESS', msg: '[Cloud DB] Authenticated admin session for user admin@lyntrix.tech.' },
+    { id: 2, time: '20:51:04', level: 'SUCCESS', msg: '[Cloud DB] Authenticated admin session for user admin@lyntrixtec.com.' },
     { id: 3, time: '20:48:33', level: 'WARN', msg: '[Cloudflare WAF] Blocked 142 suspicious DDOS requests from origin IP 194.26.x.x.' },
     { id: 4, time: '20:45:00', level: 'INFO', msg: '[PostgreSQL] Automated WAL backup snapshot stored in S3 Encrypted Vault.' },
   ]);
@@ -186,7 +186,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
 
   const handleOpenDirectGmail = (lead) => {
     const subject = `Lyntrix IT Services: Update Regarding Your Proposal [${lead.id}] - ${lead.service}`;
-    const body = `Dear ${lead.name},\n\nThank you for choosing Lyntrix IT Services for your ${lead.service} project (${lead.scale || 'Enterprise'}).\n\nWe have reviewed your project requirements:\n"${lead.details}"\n\nOur Senior Solutions Architecture Lead has accepted your scope and is ready to schedule our technical discovery call.\n\nProposal Tracking ID: ${lead.id}\nEstimated Investment: ${lead.budget}\nClient Contact: ${lead.phone || lead.email}\n\nBest regards,\nLyntrix Architecture & Engineering Advisory Team\nadmin@lyntrix.tech | https://dilnethmadushanka.online`;
+    const body = `Dear ${lead.name},\n\nThank you for choosing Lyntrix IT Services for your ${lead.service} project (${lead.scale || 'Enterprise'}).\n\nWe have reviewed your project requirements:\n"${lead.details}"\n\nOur Senior Solutions Architecture Lead has accepted your scope and is ready to schedule our technical discovery call.\n\nProposal Tracking ID: ${lead.id}\nEstimated Investment: ${lead.budget}\nClient Contact: ${lead.phone || lead.email}\n\nBest regards,\nLyntrix Architecture & Engineering Advisory Team\nadmin@lyntrixtec.com | https://lyntrixtec.com`;
     emailService.openDirectGmailComposer(lead.email, subject, body);
   };
 
@@ -901,7 +901,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                 <input
                   type="email"
                   required
-                  placeholder="e.g. admin@lyntrix.tech"
+                  placeholder="e.g. admin@lyntrixtec.com"
                   value={newAdminData.email}
                   onChange={e => setNewAdminData({ ...newAdminData, email: e.target.value })}
                   className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-cyan-400 focus:outline-none"

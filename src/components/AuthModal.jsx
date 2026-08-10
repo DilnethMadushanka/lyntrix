@@ -461,7 +461,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
 
         {/* Google SSO Launcher Button (Only for signin / signup) */}
         {(mode === 'signin' || mode === 'signup') && (
-          <div className="mb-5 space-y-2">
+          <div className="mb-5">
             <button
               onClick={handleLaunchGoogleOAuth}
               disabled={loading}
@@ -476,21 +476,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               <span>{loading ? 'Opening Google Identity Window...' : 'Continue with Google Sign-In'}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                if (!googleEmail) {
-                  setGoogleEmail('raveeshaheshan26@gmail.com');
-                  setGoogleName('Raveesha Heshan');
-                }
-                setMode('google_prompt');
-              }}
-              className="w-full py-2 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-800/60 text-cyan-300 text-[11px] font-mono flex items-center justify-center gap-2 transition-colors"
-            >
-              <span>⚡ 1-Click Instant Google Sign-In (In-App Verification)</span>
-            </button>
-
-            <div className="relative pt-2 my-4">
+            <div className="relative my-4">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800" /></div>
               <div className="relative flex justify-center text-[10px] uppercase font-mono"><span className="bg-[#0d111a] px-2 text-slate-500">OR EMAIL CREDENTIALS</span></div>
             </div>

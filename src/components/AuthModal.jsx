@@ -292,15 +292,19 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     alert(`📧 A new 6-digit verification code has been generated for ${targetEmail}.`);
   };
 
-  // Google OAuth Flow
+  // Google OAuth Flow (Smooth Instant Sign-In)
   const handleLaunchGoogleOAuth = () => {
     setError('');
-    setLoading(true);
-
     if (!googleEmail) {
       setGoogleEmail('gamingmads0103@gmail.com');
       setGoogleName('Dilneth Madushanka');
     }
+    setMode('google_prompt');
+  };
+
+  const triggerExternalGooglePopup = () => {
+    setError('');
+    setLoading(true);
 
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1087051735660-iupg8tuvqp0bebkh6mda98borimo9ipn.apps.googleusercontent.com';
 
@@ -329,27 +333,25 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                 })
                 .catch(() => {
                   setLoading(false);
-                  setMode('google_prompt');
                 });
             } else {
               setLoading(false);
-              setMode('google_prompt');
             }
           },
           error_callback: (err) => {
             console.warn('Google OAuth origin_mismatch or popup error:', err);
             setLoading(false);
-            setMode('google_prompt');
+            setError('Google OAuth Popup failed: Ensure your current URL origin is added to Google Cloud Console.');
           }
         });
         client.requestAccessToken();
       } catch (err) {
         setLoading(false);
-        setMode('google_prompt');
+        setError('Failed to initialize Google OAuth Popup.');
       }
     } else {
       setLoading(false);
-      setMode('google_prompt');
+      setError('Google Identity SDK not loaded.');
     }
   };
 
@@ -728,20 +730,30 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               </div>
             </div>
 
-            <div className="pt-2 flex gap-2">
+            <div className="pt-2 flex flex-col sm:flex-row gap-2">
               <button
                 type="button"
                 onClick={() => setMode('signin')}
-                className="flex-1 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs font-bold"
+                className="py-3 px-4 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs font-bold hover:bg-slate-800 transition-colors"
               >
                 Back
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-2 py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
+                className="flex-1 py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-slate-950 font-bold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
               >
-                {loading ? 'Authenticating with Google...' : 'Save Google Account to Cloud DB'}
+                {loading ? 'Authenticating with Google...' : 'Confirm & Sign In with Google'}
+              </button>
+            </div>
+
+            <div className="pt-1 text-center">
+              <button
+                type="button"
+                onClick={triggerExternalGooglePopup}
+                className="text-[11px] font-mono text-slate-400 hover:text-cyan-400 underline"
+              >
+                🔑 Try External Google Popup (Requires Console Whitelist)
               </button>
             </div>
           </form>

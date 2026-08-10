@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Mail, Lock, Building, Calendar, Phone, Globe, ShieldCheck, X, Sparkles, AlertCircle, ArrowRight, CheckCircle2, KeyRound, RefreshCw, Key } from 'lucide-react';
+import { User, Mail, Lock, Building, Calendar, Phone, Globe, ShieldCheck, X, Sparkles, AlertCircle, ArrowRight, CheckCircle2, KeyRound, RefreshCw, Key, Eye, EyeOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { db } from '../services/db';
 import { emailService } from '../services/emailService';
@@ -7,6 +7,12 @@ import { emailService } from '../services/emailService';
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'signin', initialEmail = '' }) {
   const [mode, setMode] = useState(initialMode || 'signin'); // 'signin', 'signup', 'forgot_password', 'otp_verify', 'set_new_password', or 'google_prompt'
   const [otpPurpose, setOtpPurpose] = useState('signup'); // 'signup' or 'forgot_password'
+  
+  // Password visibility states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Sign In States
   const [loginEmail, setLoginEmail] = useState(initialEmail || '');
@@ -628,13 +634,21 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 <input
-                  type="password"
+                  type={showNewPassword ? "text" : "password"}
                   required
                   placeholder="Enter min 6 characters..."
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-white transition-colors"
+                  title={showNewPassword ? "Hide password" : "Show password"}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -643,13 +657,21 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   required
                   placeholder="Re-enter new password..."
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-white transition-colors"
+                  title={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -790,13 +812,21 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 <input
-                  type="password"
+                  type={showLoginPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
                   value={loginPassword}
                   onChange={e => setLoginPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-white transition-colors"
+                  title={showLoginPassword ? "Hide password" : "Show password"}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -923,13 +953,21 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               <div className="relative">
                 <Lock className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
                 <input
-                  type="password"
+                  type={showSignUpPassword ? "text" : "password"}
                   required
                   placeholder="Min 6 characters..."
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-9 pr-9 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:border-cyan-400 focus:outline-none"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                  title={showSignUpPassword ? "Hide password" : "Show password"}
+                >
+                  {showSignUpPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
 

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Key, ShieldCheck, X, AlertCircle } from 'lucide-react';
+import { Lock, Mail, Key, ShieldCheck, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { db } from '../services/db';
 
 export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -81,13 +82,21 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
             <div className="relative">
               <Key className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 placeholder="Enter password..."
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none transition-colors"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-slate-400 hover:text-white transition-colors"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

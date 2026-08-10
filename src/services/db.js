@@ -471,6 +471,53 @@ export const db = {
     return finalUser;
   },
 
+  updateUserByAdmin: async (userId, updatedData) => {
+    const users = db.getUsers();
+    const index = users.findIndex(u => u.id === userId);
+    if (index !== -1) {
+      users[index] = { ...users[index], ...updatedData };
+      db.saveUsers(users);
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('users').update(updatedData).eq('id', userId);
+        } catch (e) {}
+      }
+      return users[index];
+    }
+    return null;
+  },
+
+  deleteUser: async (userId) => {
+    const users = db.getUsers();
+    const updated = users.filter(u => u.id !== userId);
+    db.saveUsers(updated);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('users').delete().eq('id', userId);
+      } catch (e) {}
+    }
+    return updated;
+  },
+
+  resetUserPasswordByAdmin: async (userId, newPassword) => {
+    const users = db.getUsers();
+    const index = users.findIndex(u => u.id === userId);
+    if (index !== -1) {
+      users[index].password = newPassword;
+      db.saveUsers(users);
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('users').update({ password: newPassword }).eq('id', userId);
+        } catch (e) {}
+      }
+      return users[index];
+    }
+    return null;
+  },
+
   googleAuth: async (googleProfile) => {
     const users = db.getUsers();
     let found = users.find(u => u.email.toLowerCase() === googleProfile.email.toLowerCase());

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, Mail, Building, Calendar, Phone, Globe, ShieldCheck, 
   X, Lock, CheckCircle2, AlertCircle, FileText, Clock, Save, 
-  Sparkles, ExternalLink, ChevronRight, Check, KeyRound, RefreshCw
+  Sparkles, ExternalLink, ChevronRight, Check, KeyRound, RefreshCw, Eye, EyeOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { db } from '../services/db';
@@ -26,6 +26,8 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
   const [passwordStep, setPasswordStep] = useState('input'); // 'input' or 'otp'
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [timerSeconds, setTimerSeconds] = useState(110);
@@ -459,13 +461,21 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
                   <div className="relative">
                     <Lock className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3.5" />
                     <input
-                      type="password"
+                      type={showNewPassword ? "text" : "password"}
                       required
                       placeholder="Min 6 characters..."
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:border-cyan-400 focus:outline-none"
+                      className="w-full pl-9 pr-9 py-2.5 sm:py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:border-cyan-400 focus:outline-none"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-white transition-colors"
+                      title={showNewPassword ? "Hide password" : "Show password"}
+                    >
+                      {showNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                 </div>
 
@@ -474,13 +484,21 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
                   <div className="relative">
                     <Lock className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3.5" />
                     <input
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       required
                       placeholder="Re-enter new password..."
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:border-cyan-400 focus:outline-none"
+                      className="w-full pl-9 pr-9 py-2.5 sm:py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:border-cyan-400 focus:outline-none"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-white transition-colors"
+                      title={showConfirmPassword ? "Hide password" : "Show password"}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                 </div>
 

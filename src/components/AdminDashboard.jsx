@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Users, DollarSign, Activity, ShieldCheck, Search, Filter, Plus, 
-  Trash2, Edit, CheckCircle2, AlertTriangle, Eye, ArrowLeft, Download, 
+  Trash2, Edit, CheckCircle2, AlertTriangle, Eye, EyeOff, Key, ArrowLeft, Download, 
   RefreshCcw, Server, Cpu, Database, Lock, LogOut, Sparkles, Save, Check,
   UserPlus, UserCheck, Calendar, Building, Globe, Phone, UserX, Mail, Send
 } from 'lucide-react';
@@ -13,8 +13,16 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [resettingUserPassword, setResettingUserPassword] = useState(null);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [newUserModalOpen, setNewUserModalOpen] = useState(false);
+
+  // Password visibility states
+  const [showAddUserPassword, setShowAddUserPassword] = useState(false);
+  const [showResetUserPassword, setShowResetUserPassword] = useState(false);
+  const [showNewAdminPassword, setShowNewAdminPassword] = useState(false);
+  const [showEditAdminPassword, setShowEditAdminPassword] = useState(false);
 
   // Cloud DB States
   const [users, setUsers] = useState(db.getUsers());
@@ -34,6 +42,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   const [newUserData, setNewUserData] = useState({
     name: '',
     email: '',
+    password: '',
     company: '',
     birthday: '',
     phone: '',
@@ -92,22 +101,55 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
     db.saveUsers(updated);
   };
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (confirm(`Are you sure you want to delete user account ${userId}?`)) {
-      const updated = users.filter(u => u.id !== userId);
+      const updated = await db.deleteUser(userId);
       setUsers(updated);
-      db.saveUsers(updated);
       if (selectedUser && selectedUser.id === userId) setSelectedUser(null);
+      setSaveNotice(`🗑️ User account ${userId} deleted from Cloud Database.`);
+      setTimeout(() => setSaveNotice(''), 4000);
     }
   };
 
-  const handleCreateNewUser = (e) => {
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    try {
+      await db.updateUserByAdmin(editingUser.id, editingUser);
+      setUsers(db.getUsers());
+      const userName = editingUser.name;
+      setEditingUser(null);
+      setSaveNotice(`✨ User ${userName} details updated in Cloud DB!`);
+      setTimeout(() => setSaveNotice(''), 4000);
+    } catch (err) {
+      alert(err.message || 'Failed to update user profile.');
+    }
+  };
+
+  const handleResetUserPassword = async (e) => {
+    e.preventDefault();
+    if (!resettingUserPassword || !resettingUserPassword.newPassword || resettingUserPassword.newPassword.length < 4) {
+      alert('Password must be at least 4 characters long.');
+      return;
+    }
+    try {
+      await db.resetUserPasswordByAdmin(resettingUserPassword.user.id, resettingUserPassword.newPassword);
+      setUsers(db.getUsers());
+      setSaveNotice(`🔑 Password for client ${resettingUserPassword.user.name} (${resettingUserPassword.user.email}) updated!`);
+      setResettingUserPassword(null);
+      setTimeout(() => setSaveNotice(''), 4000);
+    } catch (err) {
+      alert(err.message || 'Failed to reset user password.');
+    }
+  };
+
+  const handleCreateNewUser = async (e) => {
     e.preventDefault();
     try {
-      const created = db.registerUser(newUserData);
+      const created = await db.registerUser(newUserData);
       setUsers(db.getUsers());
       setNewUserModalOpen(false);
-      setNewUserData({ name: '', email: '', company: '', birthday: '', phone: '', country: 'Sri Lanka', role: 'Client' });
+      setNewUserData({ name: '', email: '', password: '', company: '', birthday: '', phone: '', country: 'Sri Lanka', role: 'Client' });
       setSaveNotice(`✨ New user ${created.name} registered in Cloud DB!`);
       setTimeout(() => setSaveNotice(''), 4000);
     } catch (err) {
@@ -479,13 +521,27 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                               </button>
                             </div>
                           </td>
-                          <td className="p-4 text-right space-x-2">
+                          <td className="p-4 text-right space-x-1.5 whitespace-nowrap">
                             <button
                               onClick={() => setSelectedUser(u)}
                               className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-cyan-400 border border-slate-700 transition-colors"
                               title="View Full Profile"
                             >
                               <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingUser({ ...u })}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-amber-400 border border-slate-700 transition-colors"
+                              title="Edit User Details"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setResettingUserPassword({ user: u, newPassword: '' })}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-emerald-400 border border-slate-700 transition-colors"
+                              title="Reset User Password"
+                            >
+                              <Key className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteUser(u.id)}
@@ -809,7 +865,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
         </div>
       )}
 
-      {/* Modal for Creating New User */}
+      {/* Modal for Creating New Client User */}
       {newUserModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="glass-card max-w-lg w-full p-6 rounded-2xl border border-cyan-500/40 space-y-4">
@@ -825,6 +881,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                   <input
                     type="text"
                     required
+                    placeholder="Client Name..."
                     value={newUserData.name}
                     onChange={e => setNewUserData({ ...newUserData, name: e.target.value })}
                     className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white"
@@ -835,10 +892,33 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                   <input
                     type="email"
                     required
+                    placeholder="client@company.com"
                     value={newUserData.email}
                     onChange={e => setNewUserData({ ...newUserData, email: e.target.value })}
-                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white"
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-300 font-mono block mb-1">Initial Password *</label>
+                <div className="relative">
+                  <input
+                    type={showAddUserPassword ? "text" : "password"}
+                    required
+                    placeholder="Set initial password..."
+                    value={newUserData.password}
+                    onChange={e => setNewUserData({ ...newUserData, password: e.target.value })}
+                    className="w-full p-2.5 pr-10 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAddUserPassword(!showAddUserPassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                    title={showAddUserPassword ? "Hide password" : "Show password"}
+                  >
+                    {showAddUserPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -848,6 +928,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                   <input
                     type="text"
                     required
+                    placeholder="Company Org..."
                     value={newUserData.company}
                     onChange={e => setNewUserData({ ...newUserData, company: e.target.value })}
                     className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white"
@@ -865,9 +946,188 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    placeholder="+94 77 123 4567"
+                    value={newUserData.phone}
+                    onChange={e => setNewUserData({ ...newUserData, phone: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Country</label>
+                  <input
+                    type="text"
+                    value={newUserData.country}
+                    onChange={e => setNewUserData({ ...newUserData, country: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-3">
-                <button type="button" onClick={() => setNewUserModalOpen(false)} className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400">Cancel</button>
-                <button type="submit" className="px-5 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold font-mono">Create User</button>
+                <button type="button" onClick={() => setNewUserModalOpen(false)} className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400 font-mono">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-lg bg-cyan-400 text-slate-950 font-bold font-mono">Create User Account</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Editing User Details */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="glass-card max-w-lg w-full p-6 rounded-2xl border border-amber-500/40 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <span className="text-xs font-mono text-amber-400">EDIT USER ACCOUNT • {editingUser.id}</span>
+                <h3 className="text-xl font-bold text-white font-['Outfit']">Edit {editingUser.name}</h3>
+              </div>
+              <button onClick={() => setEditingUser(null)} className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleUpdateUser} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUser.name || ''}
+                    onChange={e => setEditingUser({ ...editingUser, name: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Corporate Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingUser.email || ''}
+                    onChange={e => setEditingUser({ ...editingUser, email: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Company Name</label>
+                  <input
+                    type="text"
+                    value={editingUser.company || ''}
+                    onChange={e => setEditingUser({ ...editingUser, company: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Date of Birth / Founded</label>
+                  <input
+                    type="date"
+                    value={editingUser.birthday || ''}
+                    onChange={e => setEditingUser({ ...editingUser, birthday: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={editingUser.phone || ''}
+                    onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Country</label>
+                  <input
+                    type="text"
+                    value={editingUser.country || ''}
+                    onChange={e => setEditingUser({ ...editingUser, country: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Account Role</label>
+                  <select
+                    value={editingUser.role || 'Client'}
+                    onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-cyan-300 font-mono"
+                  >
+                    <option value="Client">Client</option>
+                    <option value="Enterprise Client">Enterprise Client</option>
+                    <option value="VIP Client">VIP Client</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono block mb-1">Account Status</label>
+                  <select
+                    value={editingUser.status || 'Active'}
+                    onChange={e => setEditingUser({ ...editingUser, status: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-emerald-400 font-mono font-bold"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400 font-mono">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-lg bg-amber-400 text-slate-950 font-bold font-mono">Save User Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Resetting User Password */}
+      {resettingUserPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="glass-card max-w-md w-full p-6 rounded-2xl border border-emerald-500/40 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-white font-['Outfit']">Reset Client Password</h3>
+                <p className="text-xs font-mono text-emerald-400">{resettingUserPassword.user.name} ({resettingUserPassword.user.email})</p>
+              </div>
+              <button onClick={() => setResettingUserPassword(null)} className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleResetUserPassword} className="space-y-4 text-xs">
+              <div>
+                <label className="text-slate-300 font-mono block mb-1">New Client Password *</label>
+                <div className="relative">
+                  <input
+                    type={showResetUserPassword ? "text" : "password"}
+                    required
+                    placeholder="Enter new password (min 4 characters)..."
+                    value={resettingUserPassword.newPassword}
+                    onChange={e => setResettingUserPassword({ ...resettingUserPassword, newPassword: e.target.value })}
+                    className="w-full p-2.5 pr-10 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-emerald-400 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetUserPassword(!showResetUserPassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                    title={showResetUserPassword ? "Hide password" : "Show password"}
+                  >
+                    {showResetUserPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setResettingUserPassword(null)} className="px-4 py-2 rounded-lg bg-slate-900 text-slate-400 font-mono">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-lg bg-emerald-400 text-slate-950 font-bold font-mono">Update User Password</button>
               </div>
             </form>
           </div>
@@ -910,14 +1170,24 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
 
               <div>
                 <label className="text-slate-300 font-mono block mb-1">Access Key / Password *</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Enter strong password..."
-                  value={newAdminData.password}
-                  onChange={e => setNewAdminData({ ...newAdminData, password: e.target.value })}
-                  className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-cyan-400 focus:outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type={showNewAdminPassword ? "text" : "password"}
+                    required
+                    placeholder="Enter strong password..."
+                    value={newAdminData.password}
+                    onChange={e => setNewAdminData({ ...newAdminData, password: e.target.value })}
+                    className="w-full p-2.5 pr-10 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-cyan-400 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewAdminPassword(!showNewAdminPassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                    title={showNewAdminPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -957,14 +1227,24 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
             <form onSubmit={handleUpdateAdminPassword} className="space-y-4 text-xs">
               <div>
                 <label className="text-slate-300 font-mono block mb-1">New Access Key / Password *</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Enter new password (min 4 characters)..."
-                  value={newPasswordValue}
-                  onChange={e => setNewPasswordValue(e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-cyan-400 focus:outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type={showEditAdminPassword ? "text" : "password"}
+                    required
+                    placeholder="Enter new password (min 4 characters)..."
+                    value={newPasswordValue}
+                    onChange={e => setNewPasswordValue(e.target.value)}
+                    className="w-full p-2.5 pr-10 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono focus:border-cyan-400 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditAdminPassword(!showEditAdminPassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                    title={showEditAdminPassword ? "Hide password" : "Show password"}
+                  >
+                    {showEditAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

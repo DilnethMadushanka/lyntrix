@@ -473,60 +473,60 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
         </div>
 
         {/* Console Navigation Tabs */}
-        <div className="flex overflow-x-auto pb-2 gap-2 border-b border-slate-800 no-scrollbar">
+        <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-slate-800">
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border ${
               activeTab === 'users'
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold shadow-md'
                 : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
             }`}
           >
             <Users className="w-4 h-4 text-cyan-400" />
-            <span>User Management & Client Profiles ({users.length})</span>
+            <span>User Management ({users.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('pricing')}
-            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border ${
               activeTab === 'pricing'
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold shadow-md'
                 : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
             }`}
           >
             <DollarSign className="w-4 h-4 text-emerald-400" />
-            <span>Service & Add-on Price Editor</span>
+            <span>Pricing & Services</span>
           </button>
 
           <button
             onClick={() => setActiveTab('inquiries')}
-            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border ${
               activeTab === 'inquiries'
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold shadow-md'
                 : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Client Proposals & Leads ({inquiries.length})</span>
+            <Send className="w-4 h-4 text-cyan-400" />
+            <span>Proposals & Leads ({inquiries.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('admins')}
-            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border ${
               activeTab === 'admins'
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold shadow-md'
                 : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
             }`}
           >
-            <Lock className="w-4 h-4 text-cyan-400" />
-            <span>Admin DB Credentials & Access ({admins.length})</span>
+            <Lock className="w-4 h-4 text-indigo-400" />
+            <span>Admin DB Accounts ({admins.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('uptime')}
-            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs transition-all flex items-center gap-2 border ${
               activeTab === 'uptime'
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 font-bold shadow-md'
                 : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200'
             }`}
           >

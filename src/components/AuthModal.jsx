@@ -345,8 +345,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     } else {
       setLoading(false);
       if (!googleEmail) {
-        setGoogleEmail('gamingmads0103@gmail.com');
-        setGoogleName('Dilneth Madushanka');
+        setGoogleEmail('lyntrixtec@gmail.com');
+        setGoogleName('Lyntrix Technology');
       }
       setMode('google_prompt');
     }
@@ -357,7 +357,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     setLoading(true);
     setError('');
 
-    const targetEmail = googleEmail || 'dilneth.madushanka@gmail.com';
+    const targetEmail = googleEmail || 'lyntrixtec@gmail.com';
     const targetName = googleName || 'Dilneth Madushanka';
     const targetCompany = googleCompany || 'Google Verified Enterprise';
     const targetBirthday = googleBirthday || '1998-05-14';
@@ -479,8 +479,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               type="button"
               onClick={() => {
                 if (!googleEmail) {
-                  setGoogleEmail('gamingmads0103@gmail.com');
-                  setGoogleName('Dilneth Madushanka');
+                  setGoogleEmail('lyntrixtec@gmail.com');
+                  setGoogleName('Lyntrix Technology');
                 }
                 setMode('google_prompt');
               }}
@@ -700,7 +700,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               <input
                 type="email"
                 required
-                placeholder="dilneth.madushanka@gmail.com"
+                placeholder="lyntrixtec@gmail.com"
                 value={googleEmail}
                 onChange={e => setGoogleEmail(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-mono focus:border-cyan-400 focus:outline-none"

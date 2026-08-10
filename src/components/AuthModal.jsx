@@ -304,6 +304,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         const client = window.google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+          prompt: 'select_account',
           callback: (response) => {
             if (response.access_token) {
               fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -337,7 +338,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
             setMode('google_prompt');
           }
         });
-        client.requestAccessToken();
+        client.requestAccessToken({ prompt: 'select_account' });
       } catch (err) {
         setLoading(false);
         setMode('google_prompt');

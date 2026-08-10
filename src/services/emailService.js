@@ -6,7 +6,7 @@
 export const emailService = {
   // 1. Send Automated Real-Time Order/Proposal Notification to Admin Inbox
   sendAdminOrderAlert: async (orderData) => {
-    const gmailUser = import.meta.env.VITE_GMAIL_USER || 'madsruzza@gmail.com';
+    const gmailUser = import.meta.env.VITE_GMAIL_USER || 'lyntrixtec@gmail.com';
 
     console.log(`[NODEMAILER ADMIN ALERT] Dispatching proposal ${orderData.id} to Admin (${gmailUser})...`);
 

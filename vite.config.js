@@ -17,8 +17,8 @@ function nodemailerDevServer() {
               const { toEmail, otpCode, purpose = 'Verification', origin } = parsed;
 
               const env = loadEnv('', process.cwd(), '');
-              const gmailUser = env.GMAIL_USER || env.VITE_GMAIL_USER || 'madsruzza@gmail.com';
-              const gmailPass = env.GMAIL_APP_PASSWORD || env.VITE_GMAIL_APP_PASSWORD || 'bcmfyxbytinwmlzm';
+              const gmailUser = env.GMAIL_USER || env.VITE_GMAIL_USER || 'lyntrixtec@gmail.com';
+              const gmailPass = env.GMAIL_APP_PASSWORD || env.VITE_GMAIL_APP_PASSWORD || 'kloq udzy vkyo spyk';
 
               const transporter = nodemailer.createTransport({
                 service: 'gmail',
@@ -128,8 +128,8 @@ function nodemailerDevServer() {
               const { type, orderData } = parsed;
 
               const env = loadEnv('', process.cwd(), '');
-              const gmailUser = env.GMAIL_USER || env.VITE_GMAIL_USER || 'madsruzza@gmail.com';
-              const gmailPass = env.GMAIL_APP_PASSWORD || env.VITE_GMAIL_APP_PASSWORD || 'bcmfyxbytinwmlzm';
+              const gmailUser = env.GMAIL_USER || env.VITE_GMAIL_USER || 'lyntrixtec@gmail.com';
+              const gmailPass = env.GMAIL_APP_PASSWORD || env.VITE_GMAIL_APP_PASSWORD || 'kloq udzy vkyo spyk';
 
               const transporter = nodemailer.createTransport({
                 service: 'gmail',

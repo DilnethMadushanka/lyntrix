@@ -25,8 +25,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'orderData is required' });
     }
 
-    const gmailUser = process.env.GMAIL_USER || process.env.VITE_GMAIL_USER || 'madsruzza@gmail.com';
-    const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.VITE_GMAIL_APP_PASSWORD || 'bcmfyxbytinwmlzm';
+    const gmailUser = process.env.GMAIL_USER || process.env.VITE_GMAIL_USER || 'lyntrixtec@gmail.com';
+    const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.VITE_GMAIL_APP_PASSWORD || 'kloq udzy vkyo spyk';
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',

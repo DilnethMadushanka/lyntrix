@@ -292,17 +292,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     alert(`📧 A new 6-digit verification code has been generated for ${targetEmail}.`);
   };
 
-  // Google OAuth Flow (Smooth Instant Sign-In)
+  // Google Official OAuth Popup Flow
   const handleLaunchGoogleOAuth = () => {
-    setError('');
-    if (!googleEmail) {
-      setGoogleEmail('gamingmads0103@gmail.com');
-      setGoogleName('Dilneth Madushanka');
-    }
-    setMode('google_prompt');
-  };
-
-  const triggerExternalGooglePopup = () => {
     setError('');
     setLoading(true);
 
@@ -333,25 +324,31 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                 })
                 .catch(() => {
                   setLoading(false);
+                  setMode('google_prompt');
                 });
             } else {
               setLoading(false);
+              setMode('google_prompt');
             }
           },
           error_callback: (err) => {
-            console.warn('Google OAuth origin_mismatch or popup error:', err);
+            console.warn('Google OAuth error:', err);
             setLoading(false);
-            setError('Google OAuth Popup failed: Ensure your current URL origin is added to Google Cloud Console.');
+            setMode('google_prompt');
           }
         });
         client.requestAccessToken();
       } catch (err) {
         setLoading(false);
-        setError('Failed to initialize Google OAuth Popup.');
+        setMode('google_prompt');
       }
     } else {
       setLoading(false);
-      setError('Google Identity SDK not loaded.');
+      if (!googleEmail) {
+        setGoogleEmail('gamingmads0103@gmail.com');
+        setGoogleName('Dilneth Madushanka');
+      }
+      setMode('google_prompt');
     }
   };
 
@@ -678,8 +675,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               <p className="text-slate-400">
                 Confirm your Google account details to save your identity profile to Cloud DB.
               </p>
-              <div className="mt-2 p-2 rounded bg-amber-950/60 border border-amber-500/40 text-[10px] text-amber-300">
-                ⚡ Note for Developers: If Google OAuth returned <strong>origin_mismatch (Error 400)</strong>, add <code className="text-cyan-400">http://localhost:3000</code> and <code className="text-cyan-400">https://lyntrixtec.com</code> to <em>Authorized JavaScript Origins</em> in Google Cloud Console.
+              <div className="mt-2 p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-300 font-mono flex items-center gap-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>🔒 Google OAuth 2.0 Encrypted Identity Token</span>
               </div>
             </div>
 

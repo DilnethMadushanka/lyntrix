@@ -36,6 +36,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
 
   // Admin Management Modal States
   const [newAdminModalOpen, setNewAdminModalOpen] = useState(false);
+  const [selectedUserForAdminId, setSelectedUserForAdminId] = useState('');
   const [newAdminData, setNewAdminData] = useState({ name: '', email: '', password: '', role: 'Master Admin' });
   const [editingPasswordAdmin, setEditingPasswordAdmin] = useState(null);
   const [newPasswordValue, setNewPasswordValue] = useState('');
@@ -98,9 +99,64 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   };
 
   const handleUserRoleChange = async (userId, newRole) => {
+    const targetUser = users.find(u => u.id === userId);
     const updated = users.map(u => u.id === userId ? { ...u, role: newRole } : u);
     setUsers(updated);
     await db.saveUsers(updated);
+
+    if (targetUser && (newRole === 'Admin' || newRole === 'Master Admin')) {
+      const existingAdmins = db.getAdmins();
+      const inAdminList = existingAdmins.some(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
+      if (!inAdminList) {
+        db.addAdmin({
+          name: targetUser.name,
+          email: targetUser.email,
+          password: targetUser.password || 'admin123',
+          role: newRole
+        });
+        setAdmins(db.getAdmins());
+        setSaveNotice(`🔐 User ${targetUser.name} (${targetUser.email}) promoted & added to Admin DB!`);
+        setTimeout(() => setSaveNotice(''), 4000);
+      }
+    }
+  };
+
+  const handleSelectExistingUserForAdmin = (userId) => {
+    setSelectedUserForAdminId(userId);
+    if (!userId) return;
+    const foundUser = users.find(u => u.id === userId);
+    if (foundUser) {
+      setNewAdminData({
+        name: foundUser.name,
+        email: foundUser.email,
+        password: foundUser.password || 'admin123',
+        role: 'Master Admin'
+      });
+    }
+  };
+
+  // Admin Account Handlers
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    try {
+      const created = db.addAdmin(newAdminData);
+      setAdmins(db.getAdmins());
+
+      // If an existing registered user was selected or matching email exists in users table, update user role to Master Admin!
+      const matchingUser = users.find(u => u.id === selectedUserForAdminId || u.email.toLowerCase() === newAdminData.email.toLowerCase());
+      if (matchingUser) {
+        await db.updateUserByAdmin(matchingUser.id, { role: newAdminData.role || 'Master Admin' });
+        setUsers(db.getUsers());
+      }
+
+      setNewAdminModalOpen(false);
+      setSelectedUserForAdminId('');
+      setNewAdminData({ name: '', email: '', password: '', role: 'Master Admin' });
+      setSaveNotice(`🔐 Admin account ${created.name} (${created.email}) added to DB!`);
+      setTimeout(() => setSaveNotice(''), 4000);
+    } catch (err) {
+      alert(err.message || 'Failed to add admin.');
+    }
   };
 
   const handleDeleteUser = async (userId) => {
@@ -160,19 +216,6 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   };
 
   // Admin Account Handlers
-  const handleCreateAdmin = (e) => {
-    e.preventDefault();
-    try {
-      const created = db.addAdmin(newAdminData);
-      setAdmins(db.getAdmins());
-      setNewAdminModalOpen(false);
-      setNewAdminData({ name: '', email: '', password: '', role: 'Master Admin' });
-      setSaveNotice(`🔐 New Admin ${created.name} (${created.email}) added to DB!`);
-      setTimeout(() => setSaveNotice(''), 4000);
-    } catch (err) {
-      alert(err.message || 'Failed to add admin.');
-    }
-  };
 
   const handleUpdateAdminPassword = (e) => {
     e.preventDefault();
@@ -1189,6 +1232,28 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
             </div>
 
             <form onSubmit={handleCreateAdmin} className="space-y-3 text-xs">
+              <div className="p-3 bg-cyan-950/60 border border-cyan-500/40 rounded-xl space-y-1.5">
+                <label className="text-cyan-300 font-mono font-bold block text-xs flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Select Registered User to Promote (Optional)</span>
+                </label>
+                <select
+                  value={selectedUserForAdminId}
+                  onChange={e => handleSelectExistingUserForAdmin(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-cyan-300 font-mono text-xs focus:border-cyan-400 focus:outline-none"
+                >
+                  <option value="">-- Custom Admin (Manual Entry) --</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.email}) • {u.role}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-400">
+                  Selecting a registered user auto-fills their Name & Email, and updates their role to Admin.
+                </p>
+              </div>
+
               <div>
                 <label className="text-slate-300 font-mono block mb-1">Admin Full Name *</label>
                 <input

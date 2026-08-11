@@ -191,6 +191,51 @@ const DEFAULT_USERS = [
   }
 ];
 
+// Sanitizers for Cloud DB Postgres Tables
+const sanitizeUserForCloud = (u) => ({
+  id: u.id,
+  name: u.name || 'Valued Client',
+  email: (u.email || '').trim().toLowerCase(),
+  password: u.password || null,
+  company: u.company || 'Corporate Client',
+  birthday: u.birthday || '1998-05-14',
+  phone: u.phone || 'N/A',
+  country: u.country || 'Sri Lanka',
+  role: u.role || 'Client',
+  status: u.status || 'Active',
+  joinedDate: u.joinedDate || new Date().toISOString().split('T')[0],
+  authProvider: u.authProvider || 'Email'
+});
+
+const sanitizeInquiryForCloud = (inq) => ({
+  id: inq.id,
+  name: inq.name || 'Valued Client',
+  email: (inq.email || '').trim().toLowerCase(),
+  phone: inq.phone || 'N/A',
+  service: inq.service || 'Software Development',
+  scale: inq.scale || 'Enterprise',
+  budget: inq.budget || '$5,000 - $10,000',
+  status: inq.status || 'New',
+  date: inq.date || new Date().toISOString().replace('T', ' ').slice(0, 16),
+  details: inq.details || 'N/A',
+  consultationStatus: inq.consultationStatus || 'Pending Approval',
+  hasConsultation: Boolean(inq.hasConsultation),
+  consultationDate: inq.consultationDate || null,
+  consultationTime: inq.consultationTime || null,
+  meetingPlatform: inq.meetingPlatform || null,
+  meetingLink: inq.meetingLink || null
+});
+
+const sanitizeAdminForCloud = (a) => ({
+  id: a.id,
+  name: a.name || 'Admin User',
+  email: (a.email || '').trim().toLowerCase(),
+  password: a.password || 'admin123',
+  role: a.role || 'Master Admin',
+  status: a.status || 'Active',
+  createdDate: a.createdDate || new Date().toISOString().split('T')[0]
+});
+
 // Dispatch cross-component real-time database update event
 const notifyDbUpdate = () => {
   if (typeof window !== 'undefined') {
@@ -446,7 +491,9 @@ export const db = {
       localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries));
       notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('inquiries').upsert(inquiries);
+        const sanitized = inquiries.map(sanitizeInquiryForCloud);
+        const { error } = await supabase.from('inquiries').upsert(sanitized, { onConflict: 'id' });
+        if (error) console.error('[SUPABASE INQUIRIES UPSERT ERROR]:', error);
       }
     } catch (e) {
       console.warn('[SUPABASE INQUIRIES UPSERT NOTE]:', e.message);
@@ -457,7 +504,17 @@ export const db = {
     const inquiries = db.getInquiries();
     const filtered = inquiries.filter(item => item.id !== newInquiry.id);
     const updated = [newInquiry, ...filtered];
-    await db.saveInquiries(updated);
+    localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(updated));
+    notifyDbUpdate();
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('inquiries').upsert(sanitizeInquiryForCloud(newInquiry), { onConflict: 'id' });
+        if (error) console.error('[SUPABASE ADD INQUIRY ERROR]:', error);
+      } catch (err) {
+        console.warn('[SUPABASE INQUIRY INSERT EXCEPTION]:', err.message);
+      }
+    }
     return updated;
   },
 
@@ -469,7 +526,8 @@ export const db = {
       }
       return item;
     });
-    await db.saveInquiries(updated);
+    localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(updated));
+    notifyDbUpdate();
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -482,7 +540,8 @@ export const db = {
   deleteInquiry: async (inquiryId) => {
     const inquiries = db.getInquiries();
     const updated = inquiries.filter(item => item.id !== inquiryId);
-    await db.saveInquiries(updated);
+    localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(updated));
+    notifyDbUpdate();
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -515,7 +574,9 @@ export const db = {
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
       notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('users').upsert(users);
+        const sanitized = users.map(sanitizeUserForCloud);
+        const { error } = await supabase.from('users').upsert(sanitized, { onConflict: 'email' });
+        if (error) console.error('[SUPABASE USERS UPSERT ERROR]:', error);
       }
     } catch (e) {
       console.warn('[SUPABASE USERS UPSERT NOTE]:', e.message);
@@ -524,9 +585,10 @@ export const db = {
 
   registerUser: async (userData) => {
     const users = db.getUsers();
+    const cleanEmail = userData.email.trim().toLowerCase();
     
     // Check if email already exists
-    const existing = users.find(u => u.email.toLowerCase() === userData.email.toLowerCase());
+    const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
     if (existing) {
       throw new Error('An account with this corporate email already exists.');
     }
@@ -534,8 +596,8 @@ export const db = {
     const newUser = {
       id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
       name: userData.name,
-      email: userData.email,
-      password: userData.password,
+      email: cleanEmail,
+      password: userData.password || 'password123',
       company: userData.company || 'Corporate Client',
       birthday: userData.birthday || '1998-05-14',
       phone: userData.phone || 'N/A',
@@ -547,8 +609,19 @@ export const db = {
     };
 
     const updated = [newUser, ...users];
-    await db.saveUsers(updated);
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
+    notifyDbUpdate();
     db.setCurrentUser(newUser);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('users').upsert(sanitizeUserForCloud(newUser), { onConflict: 'email' });
+        if (error) console.error('[SUPABASE REGISTER USER ERROR]:', error);
+      } catch (err) {
+        console.warn('[SUPABASE INSERT EXCEPTION]:', err.message);
+      }
+    }
+
     return newUser;
   },
 
@@ -618,7 +691,7 @@ export const db = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('users').insert([newUser]);
+        await supabase.from('users').upsert(sanitizeUserForCloud(newUser), { onConflict: 'email' });
       } catch (e) {}
     }
 
@@ -627,7 +700,8 @@ export const db = {
 
   updateUserProfile: async (updatedData) => {
     const users = db.getUsers();
-    const index = users.findIndex(u => u.email?.toLowerCase() === updatedData.email?.toLowerCase() || u.id === updatedData.id);
+    const cleanEmail = (updatedData.email || '').trim().toLowerCase();
+    const index = users.findIndex(u => u.email?.toLowerCase() === cleanEmail || u.id === updatedData.id);
     let finalUser = updatedData;
     if (index !== -1) {
       users[index] = { ...users[index], ...updatedData };
@@ -638,7 +712,7 @@ export const db = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('users').update(updatedData).eq('email', updatedData.email);
+        await supabase.from('users').upsert(sanitizeUserForCloud(finalUser), { onConflict: 'email' });
       } catch (e) {}
     }
 
@@ -654,7 +728,7 @@ export const db = {
 
       if (isSupabaseConfigured && supabase) {
         try {
-          await supabase.from('users').update(updatedData).eq('id', userId);
+          await supabase.from('users').upsert(sanitizeUserForCloud(users[index]), { onConflict: 'id' });
         } catch (e) {}
       }
       return users[index];
@@ -665,7 +739,8 @@ export const db = {
   deleteUser: async (userId) => {
     const users = db.getUsers();
     const updated = users.filter(u => u.id !== userId);
-    await db.saveUsers(updated);
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
+    notifyDbUpdate();
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -694,14 +769,16 @@ export const db = {
 
   googleAuth: async (googleProfile) => {
     const users = db.getUsers();
-    let found = users.find(u => u.email.toLowerCase() === googleProfile.email.toLowerCase());
+    const cleanEmail = (googleProfile.email || '').trim().toLowerCase();
+    let found = users.find(u => u.email.toLowerCase() === cleanEmail);
     
     if (!found) {
       found = {
         id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
-        name: googleProfile.name || googleProfile.email.split('@')[0],
-        email: googleProfile.email,
-        company: googleProfile.company || 'Google Verified Org',
+        name: googleProfile.name || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        password: null,
+        company: googleProfile.company || 'Google Verified Client',
         birthday: googleProfile.birthday || '1995-01-01',
         phone: googleProfile.phone || '+1 415 555 0199',
         country: 'United States',
@@ -710,7 +787,18 @@ export const db = {
         joinedDate: new Date().toISOString().split('T')[0],
         authProvider: 'Google'
       };
-      await db.saveUsers([found, ...users]);
+      const updated = [found, ...users];
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
+      notifyDbUpdate();
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { error } = await supabase.from('users').upsert(sanitizeUserForCloud(found), { onConflict: 'email' });
+          if (error) console.error('[SUPABASE GOOGLE USER UPSERT ERROR]:', error);
+        } catch (err) {
+          console.warn('[SUPABASE GOOGLE USER EXCEPTION]:', err.message);
+        }
+      }
     }
 
     db.setCurrentUser(found);
@@ -761,7 +849,8 @@ export const db = {
       localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(admins));
       notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('admins').upsert(admins);
+        const sanitized = admins.map(sanitizeAdminForCloud);
+        await supabase.from('admins').upsert(sanitized, { onConflict: 'email' });
       }
     } catch (e) {}
   },
@@ -784,7 +873,8 @@ export const db = {
 
   addAdmin: async (adminData) => {
     const admins = db.getAdmins();
-    const existing = admins.find(a => a.email.toLowerCase() === adminData.email.toLowerCase());
+    const cleanEmail = adminData.email.trim().toLowerCase();
+    const existing = admins.find(a => a.email.toLowerCase() === cleanEmail);
     if (existing) {
       throw new Error('An administrator account with this corporate email already exists.');
     }
@@ -792,7 +882,7 @@ export const db = {
     const newAdmin = {
       id: `ADM-${Math.floor(100 + Math.random() * 900)}`,
       name: adminData.name,
-      email: adminData.email,
+      email: cleanEmail,
       password: adminData.password,
       role: adminData.role || 'Master Admin',
       status: 'Active',
@@ -800,11 +890,12 @@ export const db = {
     };
 
     const updated = [newAdmin, ...admins];
-    db.saveAdmins(updated);
+    localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(updated));
+    notifyDbUpdate();
 
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('admins').insert([newAdmin]);
+        await supabase.from('admins').upsert(sanitizeAdminForCloud(newAdmin), { onConflict: 'email' });
       } catch (e) {}
     }
     return updated;

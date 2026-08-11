@@ -151,6 +151,7 @@ export default function App() {
   if (viewMode === 'admin' && isAdminLoggedIn) {
     return (
       <AdminDashboard
+        key={dbTrigger}
         onLogout={handleLogout}
         onReturnToSite={() => setViewMode('site')}
         onDataUpdated={triggerDataRefresh}

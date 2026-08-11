@@ -30,10 +30,24 @@ CREATE TABLE IF NOT EXISTS public.inquiries (
   scale TEXT DEFAULT 'Enterprise',
   budget TEXT NOT NULL,
   status TEXT DEFAULT 'New',
+  "consultationStatus" TEXT DEFAULT 'Pending Approval',
+  "hasConsultation" BOOLEAN DEFAULT false,
+  "consultationDate" TEXT,
+  "consultationTime" TEXT,
+  "meetingPlatform" TEXT,
+  "meetingLink" TEXT,
   date TEXT DEFAULT TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI'),
   details TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure all columns exist for existing tables
+ALTER TABLE public.inquiries ADD COLUMN IF NOT EXISTS "consultationStatus" TEXT DEFAULT 'Pending Approval';
+ALTER TABLE public.inquiries ADD COLUMN IF NOT EXISTS "hasConsultation" BOOLEAN DEFAULT false;
+ALTER TABLE public.inquiries ADD COLUMN IF NOT EXISTS "consultationDate" TEXT;
+ALTER TABLE public.inquiries ADD COLUMN IF NOT EXISTS "consultationTime" TEXT;
+ALTER TABLE public.inquiries ADD COLUMN IF NOT EXISTS "meetingPlatform" TEXT;
+ALTER TABLE public.inquiries ADD COLUMN IF NOT EXISTS "meetingLink" TEXT;
 
 -- 3. Create Admins Table (Access Control)
 CREATE TABLE IF NOT EXISTS public.admins (
@@ -60,9 +74,18 @@ CREATE TABLE IF NOT EXISTS public.services (
   title TEXT NOT NULL,
   description TEXT,
   "basePrice" NUMERIC NOT NULL,
+  badge TEXT,
+  tagline TEXT,
+  architect TEXT,
+  sla TEXT,
   icon TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS badge TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS tagline TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS architect TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS sla TEXT;
 
 -- 5. Create Add-ons Table
 CREATE TABLE IF NOT EXISTS public.addons (

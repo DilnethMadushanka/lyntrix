@@ -191,6 +191,36 @@ const DEFAULT_USERS = [
   }
 ];
 
+// Helper to safely merge arrays of items by primary key (id) and fallback key (email)
+function mergeDatasets(localList, cloudList, primaryKey = 'id', fallbackKey = 'email') {
+  const map = new Map();
+
+  // 1. Load local items
+  if (Array.isArray(localList)) {
+    for (const item of localList) {
+      if (item) {
+        const key = item[primaryKey] || (fallbackKey && item[fallbackKey] ? item[fallbackKey].toLowerCase() : null);
+        if (key) map.set(key, { ...item });
+      }
+    }
+  }
+
+  // 2. Merge cloud items non-destructively
+  if (Array.isArray(cloudList)) {
+    for (const cloudItem of cloudList) {
+      if (cloudItem) {
+        const key = cloudItem[primaryKey] || (fallbackKey && cloudItem[fallbackKey] ? cloudItem[fallbackKey].toLowerCase() : null);
+        if (key) {
+          const existing = map.get(key) || {};
+          map.set(key, { ...existing, ...cloudItem });
+        }
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
 export const db = {
   isCloudConnected: () => isSupabaseConfigured,
 
@@ -198,28 +228,87 @@ export const db = {
   syncWithCloud: async () => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      // Sync Inquiries
-      const { data: cloudInquiries } = await supabase.from('inquiries').select('*').order('created_at', { ascending: false });
-      if (cloudInquiries && cloudInquiries.length > 0) {
-        localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(cloudInquiries));
+      // 1. Non-destructive Sync for Inquiries
+      const localInquiries = db.getInquiries();
+      const { data: cloudInquiries, error: inqErr } = await supabase
+        .from('inquiries')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!inqErr && Array.isArray(cloudInquiries)) {
+        const mergedInquiries = mergeDatasets(localInquiries, cloudInquiries, 'id');
+        localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(mergedInquiries));
+
+        // Push local-only inquiries to Cloud DB
+        const cloudIds = new Set(cloudInquiries.map(c => c.id));
+        const localOnlyInquiries = mergedInquiries.filter(l => l && l.id && !cloudIds.has(l.id));
+        if (localOnlyInquiries.length > 0) {
+          await supabase.from('inquiries').upsert(localOnlyInquiries).catch(() => {});
+        }
       }
 
-      // Sync Users
-      const { data: cloudUsers } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-      if (cloudUsers && cloudUsers.length > 0) {
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(cloudUsers));
+      // 2. Non-destructive Sync for Users
+      const localUsers = db.getUsers();
+      const { data: cloudUsers, error: userErr } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!userErr && Array.isArray(cloudUsers)) {
+        const mergedUsers = mergeDatasets(localUsers, cloudUsers, 'id', 'email');
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(mergedUsers));
+
+        // Push local-only users to Cloud DB
+        const cloudEmails = new Set(cloudUsers.map(u => u.email?.toLowerCase()));
+        const localOnlyUsers = mergedUsers.filter(u => u && u.email && !cloudEmails.has(u.email.toLowerCase()));
+        if (localOnlyUsers.length > 0) {
+          await supabase.from('users').upsert(localOnlyUsers).catch(() => {});
+        }
       }
 
-      // Sync Admins
-      const { data: cloudAdmins } = await supabase.from('admins').select('*').order('created_at', { ascending: false });
-      if (cloudAdmins && cloudAdmins.length > 0) {
-        localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(cloudAdmins));
+      // 3. Non-destructive Sync for Admins
+      const localAdmins = db.getAdmins();
+      const { data: cloudAdmins, error: adminErr } = await supabase
+        .from('admins')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!adminErr && Array.isArray(cloudAdmins)) {
+        const mergedAdmins = mergeDatasets(localAdmins, cloudAdmins, 'id', 'email');
+        localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(mergedAdmins));
+
+        // Push local-only admins to Cloud DB
+        const cloudAdminEmails = new Set(cloudAdmins.map(a => a.email?.toLowerCase()));
+        const localOnlyAdmins = mergedAdmins.filter(a => a && a.email && !cloudAdminEmails.has(a.email.toLowerCase()));
+        if (localOnlyAdmins.length > 0) {
+          await supabase.from('admins').upsert(localOnlyAdmins).catch(() => {});
+        }
       }
 
-      // Sync Services
-      const { data: cloudServices } = await supabase.from('services').select('*');
-      if (cloudServices && cloudServices.length > 0) {
-        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(cloudServices));
+      // 4. Non-destructive Sync for Services
+      const localServices = db.getServices();
+      const { data: cloudServices, error: servErr } = await supabase
+        .from('services')
+        .select('*');
+
+      if (!servErr && Array.isArray(cloudServices) && cloudServices.length > 0) {
+        const mergedServices = mergeDatasets(localServices, cloudServices, 'id');
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(mergedServices));
+      } else if (localServices.length > 0) {
+        await supabase.from('services').upsert(localServices).catch(() => {});
+      }
+
+      // 5. Non-destructive Sync for Addons
+      const localAddons = db.getAddons();
+      const { data: cloudAddons, error: addonErr } = await supabase
+        .from('addons')
+        .select('*');
+
+      if (!addonErr && Array.isArray(cloudAddons) && cloudAddons.length > 0) {
+        const mergedAddons = mergeDatasets(localAddons, cloudAddons, 'id');
+        localStorage.setItem(STORAGE_KEYS.ADDONS, JSON.stringify(mergedAddons));
+      } else if (localAddons.length > 0) {
+        await supabase.from('addons').upsert(localAddons).catch(() => {});
       }
     } catch (e) {
       console.warn('[SUPABASE SYNC NOTE]:', e.message);
@@ -230,7 +319,15 @@ export const db = {
   getServices: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SERVICES);
-      return saved ? JSON.parse(saved) : DEFAULT_SERVICES;
+      if (!saved) {
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(DEFAULT_SERVICES));
+        return DEFAULT_SERVICES;
+      }
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return DEFAULT_SERVICES;
+      }
+      return mergeDatasets(DEFAULT_SERVICES, parsed, 'id');
     } catch (e) {
       return DEFAULT_SERVICES;
     }
@@ -261,7 +358,15 @@ export const db = {
   getAddons: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ADDONS);
-      return saved ? JSON.parse(saved) : DEFAULT_ADDONS;
+      if (!saved) {
+        localStorage.setItem(STORAGE_KEYS.ADDONS, JSON.stringify(DEFAULT_ADDONS));
+        return DEFAULT_ADDONS;
+      }
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return DEFAULT_ADDONS;
+      }
+      return mergeDatasets(DEFAULT_ADDONS, parsed, 'id');
     } catch (e) {
       return DEFAULT_ADDONS;
     }
@@ -280,7 +385,15 @@ export const db = {
   getInquiries: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.INQUIRIES);
-      return saved ? JSON.parse(saved) : DEFAULT_INQUIRIES;
+      if (!saved) {
+        localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(DEFAULT_INQUIRIES));
+        return DEFAULT_INQUIRIES;
+      }
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return DEFAULT_INQUIRIES;
+      }
+      return mergeDatasets(DEFAULT_INQUIRIES, parsed, 'id');
     } catch (e) {
       return DEFAULT_INQUIRIES;
     }
@@ -299,7 +412,8 @@ export const db = {
 
   addInquiry: async (newInquiry) => {
     const inquiries = db.getInquiries();
-    const updated = [newInquiry, ...inquiries];
+    const filtered = inquiries.filter(item => item.id !== newInquiry.id);
+    const updated = [newInquiry, ...filtered];
     await db.saveInquiries(updated);
     return updated;
   },
@@ -339,7 +453,15 @@ export const db = {
   getUsers: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.USERS);
-      return saved ? JSON.parse(saved) : DEFAULT_USERS;
+      if (!saved) {
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
+        return DEFAULT_USERS;
+      }
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return DEFAULT_USERS;
+      }
+      return mergeDatasets(DEFAULT_USERS, parsed, 'id', 'email');
     } catch (e) {
       return DEFAULT_USERS;
     }
@@ -588,7 +710,10 @@ export const db = {
         return DEFAULT_ADMINS;
       }
       const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_ADMINS;
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return DEFAULT_ADMINS;
+      }
+      return mergeDatasets(DEFAULT_ADMINS, parsed, 'id', 'email');
     } catch (e) {
       return DEFAULT_ADMINS;
     }

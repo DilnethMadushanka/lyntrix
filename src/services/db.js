@@ -791,7 +791,7 @@ export const db = {
   googleAuth: async (googleProfile) => {
     const users = db.getUsers();
     const cleanEmail = (googleProfile.email || '').trim().toLowerCase();
-    let found = users.find(u => u.email.toLowerCase() === cleanEmail);
+    let found = users.find(u => u.email?.toLowerCase() === cleanEmail);
     
     if (!found) {
       found = {
@@ -811,18 +811,26 @@ export const db = {
       const updated = [found, ...users];
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
       notifyDbUpdate();
-
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const { error } = await supabase.from('users').upsert(sanitizeUserForCloud(found), { onConflict: 'email' });
-          if (error) console.error('[SUPABASE GOOGLE USER UPSERT ERROR]:', error);
-        } catch (err) {
-          console.warn('[SUPABASE GOOGLE USER EXCEPTION]:', err.message);
-        }
+    } else {
+      if (googleProfile.name && found.name !== googleProfile.name) {
+        found.name = googleProfile.name;
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+        notifyDbUpdate();
       }
     }
 
     db.setCurrentUser(found);
+
+    // ALWAYS sync and upsert to Supabase Cloud DB on every Google Auth login
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('users').upsert(sanitizeUserForCloud(found), { onConflict: 'email' });
+        if (error) console.error('[SUPABASE GOOGLE USER UPSERT ERROR]:', error);
+      } catch (err) {
+        console.warn('[SUPABASE GOOGLE USER EXCEPTION]:', err.message);
+      }
+    }
+
     return found;
   },
 

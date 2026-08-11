@@ -16,8 +16,15 @@ export default function InteractiveCostCalculator({ onSelectEstimate, dbTrigger 
   const [dbAddons, setDbAddons] = useState(db.getAddons());
 
   useEffect(() => {
-    setDbServices(db.getServices());
-    setDbAddons(db.getAddons());
+    const handleDbUpdate = () => {
+      setDbServices(db.getServices());
+      setDbAddons(db.getAddons());
+    };
+    handleDbUpdate();
+    window.addEventListener('lyntrix-db-updated', handleDbUpdate);
+    return () => {
+      window.removeEventListener('lyntrix-db-updated', handleDbUpdate);
+    };
   }, [dbTrigger]);
 
   const serviceOptions = dbServices.map(s => ({

@@ -362,7 +362,7 @@ export const db = {
         }
       }
 
-      // 4. Non-destructive Sync for Services
+      // 4. Non-destructive Sync for Services (Cloud DB priority for prices)
       const localServices = db.getServices();
       let cloudServices = null;
       try {
@@ -371,15 +371,18 @@ export const db = {
       } catch (e) {}
 
       if (cloudServices && cloudServices.length > 0) {
-        const baseMerged = mergeDatasets(DEFAULT_SERVICES, cloudServices, 'id');
-        const fullyMerged = mergeDatasets(baseMerged, localServices, 'id');
+        const normalizedCloud = cloudServices.map(s => ({
+          ...s,
+          basePrice: Number(s.basePrice !== undefined ? s.basePrice : (s.baseprice !== undefined ? s.baseprice : s.base_price)) || 0
+        }));
+        const baseMerged = mergeDatasets(DEFAULT_SERVICES, localServices, 'id');
+        const fullyMerged = mergeDatasets(baseMerged, normalizedCloud, 'id');
         localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(fullyMerged));
-        await db.saveServices(fullyMerged);
       } else if (localServices.length > 0) {
         await db.saveServices(localServices);
       }
 
-      // 5. Non-destructive Sync for Addons
+      // 5. Non-destructive Sync for Addons (Cloud DB priority for prices)
       const localAddons = db.getAddons();
       let cloudAddons = null;
       try {
@@ -388,10 +391,13 @@ export const db = {
       } catch (e) {}
 
       if (cloudAddons && cloudAddons.length > 0) {
-        const baseMerged = mergeDatasets(DEFAULT_ADDONS, cloudAddons, 'id');
-        const fullyMerged = mergeDatasets(baseMerged, localAddons, 'id');
+        const normalizedCloudAddons = cloudAddons.map(a => ({
+          ...a,
+          price: Number(a.price) || 0
+        }));
+        const baseMerged = mergeDatasets(DEFAULT_ADDONS, localAddons, 'id');
+        const fullyMerged = mergeDatasets(baseMerged, normalizedCloudAddons, 'id');
         localStorage.setItem(STORAGE_KEYS.ADDONS, JSON.stringify(fullyMerged));
-        await db.saveAddons(fullyMerged);
       } else if (localAddons.length > 0) {
         await db.saveAddons(localAddons);
       }

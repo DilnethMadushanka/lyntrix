@@ -245,32 +245,41 @@ const notifyDbUpdate = () => {
 
 // Helper to safely merge arrays: baseList loaded first, priorityList values overlay baseList
 function mergeDatasets(baseList, priorityList, primaryKey = 'id', fallbackKey = 'email') {
-  const map = new Map();
+  const items = [];
 
-  // 1. Load base items (defaults or cloud data)
+  const processItem = (item, isPriority) => {
+    if (!item) return;
+    const pk = item[primaryKey] ? String(item[primaryKey]).trim() : '';
+    const fk = (fallbackKey && item[fallbackKey]) ? String(item[fallbackKey]).trim().toLowerCase() : '';
+    
+    // Match existing item by primary key or fallback key
+    let existingIndex = -1;
+    if (pk) {
+      existingIndex = items.findIndex(i => i && i[primaryKey] && String(i[primaryKey]).trim() === pk);
+    }
+    if (existingIndex === -1 && fk) {
+      existingIndex = items.findIndex(i => i && fallbackKey && i[fallbackKey] && String(i[fallbackKey]).trim().toLowerCase() === fk);
+    }
+
+    if (existingIndex !== -1) {
+      if (isPriority) {
+        items[existingIndex] = { ...items[existingIndex], ...item };
+      } else {
+        items[existingIndex] = { ...item, ...items[existingIndex] };
+      }
+    } else {
+      items.push({ ...item });
+    }
+  };
+
   if (Array.isArray(baseList)) {
-    for (const item of baseList) {
-      if (item) {
-        const key = item[primaryKey] || (fallbackKey && item[fallbackKey] ? item[fallbackKey].toLowerCase() : null);
-        if (key) map.set(key, { ...item });
-      }
-    }
+    for (const item of baseList) processItem(item, false);
   }
-
-  // 2. Overlay priority items (user edits & local updates take highest precedence)
   if (Array.isArray(priorityList)) {
-    for (const pItem of priorityList) {
-      if (pItem) {
-        const key = pItem[primaryKey] || (fallbackKey && pItem[fallbackKey] ? pItem[fallbackKey].toLowerCase() : null);
-        if (key) {
-          const existing = map.get(key) || {};
-          map.set(key, { ...existing, ...pItem });
-        }
-      }
-    }
+    for (const item of priorityList) processItem(item, true);
   }
 
-  return Array.from(map.values());
+  return items;
 }
 
 export const db = {

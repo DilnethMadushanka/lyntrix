@@ -97,17 +97,37 @@ CREATE TABLE IF NOT EXISTS public.addons (
 );
 
 -- ==============================================================================
--- ENABLE PUBLIC ACCESS POLICIES FOR INSTANT WEB CLIENT INTEGRATION
+-- ENABLE FULL PUBLIC ACCESS & GRANTS FOR INSTANT WEB CLIENT INTEGRATION
 -- ==============================================================================
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.addons ENABLE ROW LEVEL SECURITY;
+-- 1. Grant full table permissions to anon & authenticated client roles
+GRANT ALL ON TABLE public.users TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.inquiries TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.admins TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.services TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.addons TO anon, authenticated, service_role;
 
--- Allow read & write for anonymous web client
-CREATE POLICY "Allow public read/write users" ON public.users FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public read/write inquiries" ON public.inquiries FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public read/write admins" ON public.admins FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public read/write services" ON public.services FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public read/write addons" ON public.addons FOR ALL USING (true) WITH CHECK (true);
+-- 2. Drop existing policies to prevent conflicts and re-create permissive policies
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read/write users" ON public.users;
+DROP POLICY IF EXISTS "Allow full access to users" ON public.users;
+CREATE POLICY "Allow public read/write users" ON public.users FOR ALL TO public, anon, authenticated USING (true) WITH CHECK (true);
+
+ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read/write inquiries" ON public.inquiries;
+DROP POLICY IF EXISTS "Allow full access to inquiries" ON public.inquiries;
+CREATE POLICY "Allow public read/write inquiries" ON public.inquiries FOR ALL TO public, anon, authenticated USING (true) WITH CHECK (true);
+
+ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read/write admins" ON public.admins;
+DROP POLICY IF EXISTS "Allow full access to admins" ON public.admins;
+CREATE POLICY "Allow public read/write admins" ON public.admins FOR ALL TO public, anon, authenticated USING (true) WITH CHECK (true);
+
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read/write services" ON public.services;
+DROP POLICY IF EXISTS "Allow full access to services" ON public.services;
+CREATE POLICY "Allow public read/write services" ON public.services FOR ALL TO public, anon, authenticated USING (true) WITH CHECK (true);
+
+ALTER TABLE public.addons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read/write addons" ON public.addons;
+DROP POLICY IF EXISTS "Allow full access to addons" ON public.addons;
+CREATE POLICY "Allow public read/write addons" ON public.addons FOR ALL TO public, anon, authenticated USING (true) WITH CHECK (true);

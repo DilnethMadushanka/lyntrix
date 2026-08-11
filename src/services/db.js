@@ -235,88 +235,96 @@ export const db = {
   syncWithCloud: async () => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      // 1. Non-destructive Sync for Inquiries (local proposals have priority)
+      // 1. Non-destructive Sync for Inquiries
       const localInquiries = db.getInquiries();
-      const { data: cloudInquiries, error: inqErr } = await supabase
-        .from('inquiries')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let cloudInquiries = null;
+      try {
+        const { data } = await supabase.from('inquiries').select('*');
+        if (data && Array.isArray(data)) cloudInquiries = data;
+      } catch (e) {}
 
-      if (!inqErr && Array.isArray(cloudInquiries)) {
-        const mergedInquiries = mergeDatasets(cloudInquiries, localInquiries, 'id');
-        localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(mergedInquiries));
+      if (cloudInquiries && cloudInquiries.length > 0) {
+        const baseMerged = mergeDatasets(DEFAULT_INQUIRIES, cloudInquiries, 'id');
+        const fullyMerged = mergeDatasets(baseMerged, localInquiries, 'id');
+        localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(fullyMerged));
 
-        // Push local-only inquiries to Cloud DB
         const cloudIds = new Set(cloudInquiries.map(c => c.id));
-        const localOnlyInquiries = mergedInquiries.filter(l => l && l.id && !cloudIds.has(l.id));
+        const localOnlyInquiries = fullyMerged.filter(l => l && l.id && !cloudIds.has(l.id));
         if (localOnlyInquiries.length > 0) {
           await supabase.from('inquiries').upsert(localOnlyInquiries).catch(() => {});
         }
       }
 
-      // 2. Non-destructive Sync for Users (local registered users have priority)
+      // 2. Non-destructive Sync for Users
       const localUsers = db.getUsers();
-      const { data: cloudUsers, error: userErr } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let cloudUsers = null;
+      try {
+        const { data } = await supabase.from('users').select('*');
+        if (data && Array.isArray(data)) cloudUsers = data;
+      } catch (e) {}
 
-      if (!userErr && Array.isArray(cloudUsers)) {
-        const mergedUsers = mergeDatasets(cloudUsers, localUsers, 'id', 'email');
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(mergedUsers));
+      if (cloudUsers && cloudUsers.length > 0) {
+        const baseMerged = mergeDatasets(DEFAULT_USERS, cloudUsers, 'id', 'email');
+        const fullyMerged = mergeDatasets(baseMerged, localUsers, 'id', 'email');
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(fullyMerged));
 
-        // Push local-only users to Cloud DB
         const cloudEmails = new Set(cloudUsers.map(u => u.email?.toLowerCase()));
-        const localOnlyUsers = mergedUsers.filter(u => u && u.email && !cloudEmails.has(u.email.toLowerCase()));
+        const localOnlyUsers = fullyMerged.filter(u => u && u.email && !cloudEmails.has(u.email.toLowerCase()));
         if (localOnlyUsers.length > 0) {
           await supabase.from('users').upsert(localOnlyUsers).catch(() => {});
         }
       }
 
-      // 3. Non-destructive Sync for Admins (local admins & password changes have priority)
+      // 3. Non-destructive Sync for Admins
       const localAdmins = db.getAdmins();
-      const { data: cloudAdmins, error: adminErr } = await supabase
-        .from('admins')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let cloudAdmins = null;
+      try {
+        const { data } = await supabase.from('admins').select('*');
+        if (data && Array.isArray(data)) cloudAdmins = data;
+      } catch (e) {}
 
-      if (!adminErr && Array.isArray(cloudAdmins)) {
-        const mergedAdmins = mergeDatasets(cloudAdmins, localAdmins, 'id', 'email');
-        localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(mergedAdmins));
+      if (cloudAdmins && cloudAdmins.length > 0) {
+        const baseMerged = mergeDatasets(DEFAULT_ADMINS, cloudAdmins, 'id', 'email');
+        const fullyMerged = mergeDatasets(baseMerged, localAdmins, 'id', 'email');
+        localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(fullyMerged));
 
-        // Push local-only admins to Cloud DB
         const cloudAdminEmails = new Set(cloudAdmins.map(a => a.email?.toLowerCase()));
-        const localOnlyAdmins = mergedAdmins.filter(a => a && a.email && !cloudAdminEmails.has(a.email.toLowerCase()));
+        const localOnlyAdmins = fullyMerged.filter(a => a && a.email && !cloudAdminEmails.has(a.email.toLowerCase()));
         if (localOnlyAdmins.length > 0) {
           await supabase.from('admins').upsert(localOnlyAdmins).catch(() => {});
         }
       }
 
-      // 4. Non-destructive Sync for Services (local edited prices have priority)
+      // 4. Non-destructive Sync for Services
       const localServices = db.getServices();
-      const { data: cloudServices, error: servErr } = await supabase
-        .from('services')
-        .select('*');
+      let cloudServices = null;
+      try {
+        const { data } = await supabase.from('services').select('*');
+        if (data && Array.isArray(data)) cloudServices = data;
+      } catch (e) {}
 
-      if (!servErr && Array.isArray(cloudServices) && cloudServices.length > 0) {
-        const mergedServices = mergeDatasets(cloudServices, localServices, 'id');
-        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(mergedServices));
-        // Push current local prices to Cloud DB so Cloud DB stays updated
-        await db.saveServices(mergedServices);
+      if (cloudServices && cloudServices.length > 0) {
+        const baseMerged = mergeDatasets(DEFAULT_SERVICES, cloudServices, 'id');
+        const fullyMerged = mergeDatasets(baseMerged, localServices, 'id');
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(fullyMerged));
+        await db.saveServices(fullyMerged);
       } else if (localServices.length > 0) {
         await db.saveServices(localServices);
       }
 
-      // 5. Non-destructive Sync for Addons (local edited prices have priority)
+      // 5. Non-destructive Sync for Addons
       const localAddons = db.getAddons();
-      const { data: cloudAddons, error: addonErr } = await supabase
-        .from('addons')
-        .select('*');
+      let cloudAddons = null;
+      try {
+        const { data } = await supabase.from('addons').select('*');
+        if (data && Array.isArray(data)) cloudAddons = data;
+      } catch (e) {}
 
-      if (!addonErr && Array.isArray(cloudAddons) && cloudAddons.length > 0) {
-        const mergedAddons = mergeDatasets(cloudAddons, localAddons, 'id');
-        localStorage.setItem(STORAGE_KEYS.ADDONS, JSON.stringify(mergedAddons));
-        await db.saveAddons(mergedAddons);
+      if (cloudAddons && cloudAddons.length > 0) {
+        const baseMerged = mergeDatasets(DEFAULT_ADDONS, cloudAddons, 'id');
+        const fullyMerged = mergeDatasets(baseMerged, localAddons, 'id');
+        localStorage.setItem(STORAGE_KEYS.ADDONS, JSON.stringify(fullyMerged));
+        await db.saveAddons(fullyMerged);
       } else if (localAddons.length > 0) {
         await db.saveAddons(localAddons);
       }

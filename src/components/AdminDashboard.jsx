@@ -35,7 +35,31 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   const [saveNotice, setSaveNotice] = useState('');
 
   // Live real-time DB synchronization listener
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+
+  const handleManualCloudSync = async () => {
+    setIsSyncingCloud(true);
+    await db.syncWithCloud();
+    setUsers(db.getUsers());
+    setServices(db.getServices());
+    setAddons(db.getAddons());
+    setInquiries(db.getInquiries());
+    setAdmins(db.getAdmins());
+    setIsSyncingCloud(false);
+    setSaveNotice('☁️ Supabase Cloud Database synced successfully! All accounts and proposals updated.');
+    setTimeout(() => setSaveNotice(''), 4000);
+  };
+
   useEffect(() => {
+    // Immediate cloud pull on dashboard mount
+    db.syncWithCloud().then(() => {
+      setUsers(db.getUsers());
+      setServices(db.getServices());
+      setAddons(db.getAddons());
+      setInquiries(db.getInquiries());
+      setAdmins(db.getAdmins());
+    });
+
     const handleDbUpdate = () => {
       setUsers(db.getUsers());
       setServices(db.getServices());
@@ -378,20 +402,30 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
 
   // Filtered Users
   const filteredUsers = users.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = filterRole === 'all' || item.role.toLowerCase().replace(' ', '') === filterRole.toLowerCase().replace(' ', '');
+    if (!item) return false;
+    const name = (item.name || '').toLowerCase();
+    const email = (item.email || '').toLowerCase();
+    const company = (item.company || '').toLowerCase();
+    const id = (item.id || '').toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+
+    const matchesSearch = !q || name.includes(q) || email.includes(q) || company.includes(q) || id.includes(q);
+    const itemRole = (item.role || 'Client').toLowerCase().replace(/\s+/g, '');
+    const targetFilterRole = filterRole.toLowerCase().replace(/\s+/g, '');
+    const matchesRole = filterRole === 'all' || itemRole === targetFilterRole;
     return matchesSearch && matchesRole;
   });
 
   // Filtered Inquiries
   const filteredInquiries = inquiries.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.service.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!item) return false;
+    const name = (item.name || '').toLowerCase();
+    const email = (item.email || '').toLowerCase();
+    const id = (item.id || '').toLowerCase();
+    const service = (item.service || '').toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+
+    const matchesSearch = !q || name.includes(q) || email.includes(q) || id.includes(q) || service.includes(q);
     return matchesSearch;
   });
 
@@ -418,6 +452,16 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={handleManualCloudSync}
+              disabled={isSyncingCloud}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 text-xs font-mono text-cyan-300 hover:bg-cyan-900 border border-cyan-700/60 transition-colors"
+              title="Pull latest accounts directly from Supabase Cloud DB"
+            >
+              <RefreshCcw className={`w-3.5 h-3.5 ${isSyncingCloud ? 'animate-spin text-cyan-400' : ''}`} />
+              <span>{isSyncingCloud ? 'Syncing...' : 'Sync Cloud DB'}</span>
+            </button>
+
             <button
               onClick={onReturnToSite}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 text-xs font-mono text-slate-300 hover:text-white border border-slate-700 transition-colors"

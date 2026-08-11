@@ -531,12 +531,14 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
               <span>CLOUD DB PERSISTENCE</span>
-              <Database className="w-4 h-4 text-emerald-400" />
+              <Database className={`w-4 h-4 ${db.isCloudConnected() ? 'text-emerald-400' : 'text-amber-400'}`} />
             </div>
-            <div className="text-3xl font-extrabold text-emerald-400 font-['Outfit']">ONLINE</div>
-            <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Encrypted User Storage</span>
+            <div className={`text-3xl font-extrabold font-['Outfit'] ${db.isCloudConnected() ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {db.isCloudConnected() ? 'ONLINE' : 'LOCAL ONLY'}
+            </div>
+            <div className={`text-[10px] font-mono flex items-center gap-1 ${db.isCloudConnected() ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <span className={`w-2 h-2 rounded-full ${db.isCloudConnected() ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+              <span>{db.isCloudConnected() ? 'Supabase Cloud Connected' : 'Missing Vercel Env Keys'}</span>
             </div>
           </div>
         </div>

@@ -661,8 +661,30 @@ export const db = {
   },
 
   loginUser: (email, password) => {
-    const users = db.getUsers();
     const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Check if user is in Admin DB
+    const admins = db.getAdmins();
+    const foundAdmin = admins.find(a => a.email.toLowerCase() === cleanEmail);
+    if (foundAdmin) {
+      if (foundAdmin.status === 'Suspended') {
+        throw new Error('Account suspended. Please contact Lyntrix Compliance Support.');
+      }
+      if (foundAdmin.password && password && foundAdmin.password !== password) {
+        throw new Error('Incorrect password. Please verify your credentials or reset your password.');
+      }
+      const adminUser = {
+        ...foundAdmin,
+        role: foundAdmin.role || 'Master Admin',
+        isAdmin: true
+      };
+      db.setCurrentAdmin(foundAdmin);
+      db.setCurrentUser(adminUser);
+      return adminUser;
+    }
+
+    // 2. Regular User check
+    const users = db.getUsers();
     const found = users.find(u => u.email.toLowerCase() === cleanEmail);
     if (!found) {
       throw new Error('No account found with this email. Please sign up first.');
@@ -673,6 +695,13 @@ export const db = {
     if (found.password && password && found.password !== password) {
       throw new Error('Incorrect password. Please verify your credentials or reset your password.');
     }
+
+    const userRole = (found.role || '').toLowerCase();
+    if (userRole.includes('admin') || found.isAdmin) {
+      found.isAdmin = true;
+      db.setCurrentAdmin(found);
+    }
+
     db.setCurrentUser(found);
     return found;
   },
@@ -803,8 +832,25 @@ export const db = {
   },
 
   googleAuth: async (googleProfile) => {
-    const users = db.getUsers();
     const cleanEmail = (googleProfile.email || '').trim().toLowerCase();
+
+    // 1. Check if email belongs to an Admin in Admin DB
+    const admins = db.getAdmins();
+    const foundAdmin = admins.find(a => a.email.toLowerCase() === cleanEmail);
+    if (foundAdmin) {
+      const adminUser = {
+        ...foundAdmin,
+        name: googleProfile.name || foundAdmin.name,
+        role: foundAdmin.role || 'Master Admin',
+        isAdmin: true
+      };
+      db.setCurrentAdmin(foundAdmin);
+      db.setCurrentUser(adminUser);
+      return adminUser;
+    }
+
+    // 2. Regular User check / creation
+    const users = db.getUsers();
     let found = users.find(u => u.email?.toLowerCase() === cleanEmail);
     
     if (!found) {
@@ -831,6 +877,12 @@ export const db = {
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
         notifyDbUpdate();
       }
+    }
+
+    const userRole = (found.role || '').toLowerCase();
+    if (userRole.includes('admin') || found.isAdmin) {
+      found.isAdmin = true;
+      db.setCurrentAdmin(found);
     }
 
     db.setCurrentUser(found);

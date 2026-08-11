@@ -192,7 +192,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
       const existingAdmins = db.getAdmins();
       const inAdminList = existingAdmins.some(a => a.email.toLowerCase() === targetUser.email.toLowerCase());
       if (!inAdminList) {
-        db.addAdmin({
+        await db.addAdmin({
           name: targetUser.name,
           email: targetUser.email,
           password: targetUser.password || 'admin123',
@@ -223,7 +223,7 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
     try {
-      const created = db.addAdmin(newAdminData);
+      await db.addAdmin(newAdminData);
       setAdmins(db.getAdmins());
 
       // If an existing registered user was selected or matching email exists in users table, update user role to Master Admin!
@@ -235,8 +235,8 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
 
       setNewAdminModalOpen(false);
       setSelectedUserForAdminId('');
+      setSaveNotice(`🔐 Admin account ${newAdminData.name || 'new admin'} (${newAdminData.email}) added to DB!`);
       setNewAdminData({ name: '', email: '', password: '', role: 'Master Admin' });
-      setSaveNotice(`🔐 Admin account ${created.name} (${created.email}) added to DB!`);
       setTimeout(() => setSaveNotice(''), 4000);
     } catch (err) {
       alert(err.message || 'Failed to add admin.');

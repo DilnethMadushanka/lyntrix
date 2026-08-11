@@ -18,13 +18,21 @@ import UserProfileModal from './components/UserProfileModal';
 import { db } from './services/db';
 import { LayoutDashboard, AlertTriangle } from 'lucide-react';
 
+const isUserAdmin = (user, admin) => {
+  if (admin) return true;
+  if (!user) return false;
+  if (user.isAdmin) return true;
+  const role = (user.role || '').toLowerCase();
+  return role.includes('admin');
+};
+
 export default function App() {
   const [estimateData, setEstimateData] = useState(null);
   const [currentUser, setCurrentUser] = useState(db.getCurrentUser());
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
     const admin = db.getCurrentAdmin();
     const user = db.getCurrentUser();
-    return !!admin || user?.role === 'Admin';
+    return isUserAdmin(user, admin);
   });
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -46,7 +54,7 @@ export default function App() {
       const user = db.getCurrentUser();
       const admin = db.getCurrentAdmin();
       setCurrentUser(user);
-      setIsAdminLoggedIn(!!admin || user?.role === 'Admin');
+      setIsAdminLoggedIn(isUserAdmin(user, admin));
       setDbTrigger(prev => prev + 1);
     };
 

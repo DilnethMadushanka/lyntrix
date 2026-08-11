@@ -28,19 +28,28 @@ const DEFAULT_MAINTENANCE = {
 const DEFAULT_ADMINS = [
   {
     id: 'ADM-001',
-    email: 'admin@lyntrixtec.com',
+    email: 'admin@lyntrix.tech',
     password: 'admin123',
-    name: 'Super Admin',
+    name: 'Dilneth Madushanka',
     role: 'Master Admin',
     createdDate: '2026-08-01',
     status: 'Active'
   },
   {
     id: 'ADM-002',
-    email: 'dilneth@lyntrixtec.com',
+    email: 'dilneth@lyntrix.tech',
     password: 'admin123',
     name: 'Dilneth Madushanka',
     role: 'Lead Architect & Admin',
+    createdDate: '2026-08-01',
+    status: 'Active'
+  },
+  {
+    id: 'ADM-003',
+    email: 'admin@lyntrixtec.com',
+    password: 'admin123',
+    name: 'Super Admin',
+    role: 'Master Admin',
     createdDate: '2026-08-01',
     status: 'Active'
   }

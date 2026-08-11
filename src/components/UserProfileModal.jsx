@@ -77,14 +77,14 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
     inq => inq.email?.trim().toLowerCase() === currentUser.email?.trim().toLowerCase()
   );
 
-  const handleUpdateProfile = (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setError('');
     setNotice('');
     setLoading(true);
 
     try {
-      const updated = db.updateUserProfile({
+      const updated = await db.updateUserProfile({
         ...currentUser,
         name: formData.name,
         username: formData.username,
@@ -173,7 +173,7 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
     }
   };
 
-  const executeVerifyPasswordOtp = (codeToVerify) => {
+  const executeVerifyPasswordOtp = async (codeToVerify) => {
     setError('');
 
     if (codeToVerify.length < 6) {
@@ -189,7 +189,7 @@ export default function UserProfileModal({ isOpen, onClose, currentUser, onProfi
     setLoading(true);
 
     try {
-      db.updateUserPassword(currentUser.email, newPassword);
+      await db.updateUserPassword(currentUser.email, newPassword);
       setLoading(false);
       setPasswordStep('input');
       setNewPassword('');

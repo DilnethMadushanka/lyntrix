@@ -42,8 +42,20 @@ export default function App() {
     const syncMaintenance = () => {
       setMaintenanceConfig(db.getMaintenanceConfig());
     };
+    const syncDbState = () => {
+      const user = db.getCurrentUser();
+      const admin = db.getCurrentAdmin();
+      setCurrentUser(user);
+      setIsAdminLoggedIn(!!admin || user?.role === 'Admin');
+      setDbTrigger(prev => prev + 1);
+    };
+
     window.addEventListener('lyntrix-maintenance-updated', syncMaintenance);
-    return () => window.removeEventListener('lyntrix-maintenance-updated', syncMaintenance);
+    window.addEventListener('lyntrix-db-updated', syncDbState);
+    return () => {
+      window.removeEventListener('lyntrix-maintenance-updated', syncMaintenance);
+      window.removeEventListener('lyntrix-db-updated', syncDbState);
+    };
   }, []);
 
   // 1-Click Magic Email Verification Link Listener & Cloud DB Sync

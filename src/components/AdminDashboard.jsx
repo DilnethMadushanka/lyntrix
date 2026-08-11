@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, DollarSign, Activity, ShieldCheck, Search, Filter, Plus, 
   Trash2, Edit, CheckCircle2, AlertTriangle, Eye, EyeOff, Key, ArrowLeft, Download, 
@@ -33,6 +33,20 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   const [inquiries, setInquiries] = useState(db.getInquiries());
   const [admins, setAdmins] = useState(db.getAdmins());
   const [saveNotice, setSaveNotice] = useState('');
+
+  // Live real-time DB synchronization listener
+  useEffect(() => {
+    const handleDbUpdate = () => {
+      setUsers(db.getUsers());
+      setServices(db.getServices());
+      setAddons(db.getAddons());
+      setInquiries(db.getInquiries());
+      setAdmins(db.getAdmins());
+      setMaintenanceConfig(db.getMaintenanceConfig());
+    };
+    window.addEventListener('lyntrix-db-updated', handleDbUpdate);
+    return () => window.removeEventListener('lyntrix-db-updated', handleDbUpdate);
+  }, []);
 
   // Admin Management Modal States
   const [newAdminModalOpen, setNewAdminModalOpen] = useState(false);
@@ -122,9 +136,9 @@ export default function AdminDashboard({ onLogout, onReturnToSite, onDataUpdated
   };
 
   // Save All Price Changes to Cloud Database
-  const handleSavePrices = () => {
-    db.saveServices(services);
-    db.saveAddons(addons);
+  const handleSavePrices = async () => {
+    await db.saveServices(services);
+    await db.saveAddons(addons);
     if (onDataUpdated) onDataUpdated();
 
     setSaveNotice('✨ All prices & service configs successfully updated and synced to Cloud DB!');

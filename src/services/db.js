@@ -191,13 +191,20 @@ const DEFAULT_USERS = [
   }
 ];
 
-// Helper to safely merge arrays of items by primary key (id) and fallback key (email)
-function mergeDatasets(localList, cloudList, primaryKey = 'id', fallbackKey = 'email') {
+// Dispatch cross-component real-time database update event
+const notifyDbUpdate = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('lyntrix-db-updated'));
+  }
+};
+
+// Helper to safely merge arrays: baseList loaded first, priorityList values overlay baseList
+function mergeDatasets(baseList, priorityList, primaryKey = 'id', fallbackKey = 'email') {
   const map = new Map();
 
-  // 1. Load local items
-  if (Array.isArray(localList)) {
-    for (const item of localList) {
+  // 1. Load base items (defaults or cloud data)
+  if (Array.isArray(baseList)) {
+    for (const item of baseList) {
       if (item) {
         const key = item[primaryKey] || (fallbackKey && item[fallbackKey] ? item[fallbackKey].toLowerCase() : null);
         if (key) map.set(key, { ...item });
@@ -205,14 +212,14 @@ function mergeDatasets(localList, cloudList, primaryKey = 'id', fallbackKey = 'e
     }
   }
 
-  // 2. Merge cloud items non-destructively
-  if (Array.isArray(cloudList)) {
-    for (const cloudItem of cloudList) {
-      if (cloudItem) {
-        const key = cloudItem[primaryKey] || (fallbackKey && cloudItem[fallbackKey] ? cloudItem[fallbackKey].toLowerCase() : null);
+  // 2. Overlay priority items (user edits & local updates take highest precedence)
+  if (Array.isArray(priorityList)) {
+    for (const pItem of priorityList) {
+      if (pItem) {
+        const key = pItem[primaryKey] || (fallbackKey && pItem[fallbackKey] ? pItem[fallbackKey].toLowerCase() : null);
         if (key) {
           const existing = map.get(key) || {};
-          map.set(key, { ...existing, ...cloudItem });
+          map.set(key, { ...existing, ...pItem });
         }
       }
     }
@@ -228,7 +235,7 @@ export const db = {
   syncWithCloud: async () => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      // 1. Non-destructive Sync for Inquiries
+      // 1. Non-destructive Sync for Inquiries (local proposals have priority)
       const localInquiries = db.getInquiries();
       const { data: cloudInquiries, error: inqErr } = await supabase
         .from('inquiries')
@@ -236,7 +243,7 @@ export const db = {
         .order('created_at', { ascending: false });
 
       if (!inqErr && Array.isArray(cloudInquiries)) {
-        const mergedInquiries = mergeDatasets(localInquiries, cloudInquiries, 'id');
+        const mergedInquiries = mergeDatasets(cloudInquiries, localInquiries, 'id');
         localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(mergedInquiries));
 
         // Push local-only inquiries to Cloud DB
@@ -247,7 +254,7 @@ export const db = {
         }
       }
 
-      // 2. Non-destructive Sync for Users
+      // 2. Non-destructive Sync for Users (local registered users have priority)
       const localUsers = db.getUsers();
       const { data: cloudUsers, error: userErr } = await supabase
         .from('users')
@@ -255,7 +262,7 @@ export const db = {
         .order('created_at', { ascending: false });
 
       if (!userErr && Array.isArray(cloudUsers)) {
-        const mergedUsers = mergeDatasets(localUsers, cloudUsers, 'id', 'email');
+        const mergedUsers = mergeDatasets(cloudUsers, localUsers, 'id', 'email');
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(mergedUsers));
 
         // Push local-only users to Cloud DB
@@ -266,7 +273,7 @@ export const db = {
         }
       }
 
-      // 3. Non-destructive Sync for Admins
+      // 3. Non-destructive Sync for Admins (local admins & password changes have priority)
       const localAdmins = db.getAdmins();
       const { data: cloudAdmins, error: adminErr } = await supabase
         .from('admins')
@@ -274,7 +281,7 @@ export const db = {
         .order('created_at', { ascending: false });
 
       if (!adminErr && Array.isArray(cloudAdmins)) {
-        const mergedAdmins = mergeDatasets(localAdmins, cloudAdmins, 'id', 'email');
+        const mergedAdmins = mergeDatasets(cloudAdmins, localAdmins, 'id', 'email');
         localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(mergedAdmins));
 
         // Push local-only admins to Cloud DB
@@ -285,31 +292,36 @@ export const db = {
         }
       }
 
-      // 4. Non-destructive Sync for Services
+      // 4. Non-destructive Sync for Services (local edited prices have priority)
       const localServices = db.getServices();
       const { data: cloudServices, error: servErr } = await supabase
         .from('services')
         .select('*');
 
       if (!servErr && Array.isArray(cloudServices) && cloudServices.length > 0) {
-        const mergedServices = mergeDatasets(localServices, cloudServices, 'id');
+        const mergedServices = mergeDatasets(cloudServices, localServices, 'id');
         localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(mergedServices));
+        // Push current local prices to Cloud DB so Cloud DB stays updated
+        await db.saveServices(mergedServices);
       } else if (localServices.length > 0) {
-        await supabase.from('services').upsert(localServices).catch(() => {});
+        await db.saveServices(localServices);
       }
 
-      // 5. Non-destructive Sync for Addons
+      // 5. Non-destructive Sync for Addons (local edited prices have priority)
       const localAddons = db.getAddons();
       const { data: cloudAddons, error: addonErr } = await supabase
         .from('addons')
         .select('*');
 
       if (!addonErr && Array.isArray(cloudAddons) && cloudAddons.length > 0) {
-        const mergedAddons = mergeDatasets(localAddons, cloudAddons, 'id');
+        const mergedAddons = mergeDatasets(cloudAddons, localAddons, 'id');
         localStorage.setItem(STORAGE_KEYS.ADDONS, JSON.stringify(mergedAddons));
+        await db.saveAddons(mergedAddons);
       } else if (localAddons.length > 0) {
-        await supabase.from('addons').upsert(localAddons).catch(() => {});
+        await db.saveAddons(localAddons);
       }
+
+      notifyDbUpdate();
     } catch (e) {
       console.warn('[SUPABASE SYNC NOTE]:', e.message);
     }
@@ -336,13 +348,26 @@ export const db = {
   saveServices: async (services) => {
     try {
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+      notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('services').upsert(services);
+        const payload = services.map(s => ({
+          id: s.id,
+          title: s.title,
+          description: s.description || '',
+          basePrice: Number(s.basePrice) || 0,
+          badge: s.badge || '',
+          tagline: s.tagline || '',
+          architect: s.architect || '',
+          sla: s.sla || ''
+        }));
+        await supabase.from('services').upsert(payload);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[SUPABASE SERVICES UPSERT NOTE]:', e.message);
+    }
   },
 
-  updateServicePrice: (serviceId, newBasePrice) => {
+  updateServicePrice: async (serviceId, newBasePrice) => {
     const services = db.getServices();
     const updated = services.map(s => {
       if (s.id === serviceId) {
@@ -350,7 +375,7 @@ export const db = {
       }
       return s;
     });
-    db.saveServices(updated);
+    await db.saveServices(updated);
     return updated;
   },
 
@@ -375,10 +400,19 @@ export const db = {
   saveAddons: async (addons) => {
     try {
       localStorage.setItem(STORAGE_KEYS.ADDONS, JSON.stringify(addons));
+      notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('addons').upsert(addons);
+        const payload = addons.map(a => ({
+          id: a.id,
+          title: a.title,
+          price: Number(a.price) || 0,
+          popular: Boolean(a.popular)
+        }));
+        await supabase.from('addons').upsert(payload);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[SUPABASE ADDONS UPSERT NOTE]:', e.message);
+    }
   },
 
   // --- Inquiries / Proposals Management ---
@@ -402,6 +436,7 @@ export const db = {
   saveInquiries: async (inquiries) => {
     try {
       localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries));
+      notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
         await supabase.from('inquiries').upsert(inquiries);
       }
@@ -470,6 +505,7 @@ export const db = {
   saveUsers: async (users) => {
     try {
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
         await supabase.from('users').upsert(users);
       }
@@ -496,33 +532,30 @@ export const db = {
       birthday: userData.birthday || '1998-05-14',
       phone: userData.phone || 'N/A',
       country: userData.country || 'Sri Lanka',
-      role: 'Client',
+      role: userData.role || 'Client',
       status: 'Active',
       joinedDate: new Date().toISOString().split('T')[0],
       authProvider: userData.authProvider || 'Email'
     };
 
     const updated = [newUser, ...users];
-    db.saveUsers(updated);
+    await db.saveUsers(updated);
     db.setCurrentUser(newUser);
-
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await supabase.from('users').insert([newUser]);
-      } catch (e) {}
-    }
-
     return newUser;
   },
 
   loginUser: (email, password) => {
     const users = db.getUsers();
-    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const cleanEmail = email.trim().toLowerCase();
+    const found = users.find(u => u.email.toLowerCase() === cleanEmail);
     if (!found) {
       throw new Error('No account found with this email. Please sign up first.');
     }
     if (found.status === 'Suspended') {
       throw new Error('Account suspended. Please contact Lyntrix Compliance Support.');
+    }
+    if (found.password && password && found.password !== password) {
+      throw new Error('Incorrect password. Please verify your credentials or reset your password.');
     }
     db.setCurrentUser(found);
     return found;
@@ -536,7 +569,7 @@ export const db = {
     const adminIndex = admins.findIndex(a => a.email.toLowerCase() === cleanEmail);
     if (adminIndex !== -1) {
       admins[adminIndex].password = newPassword;
-      db.saveAdmins(admins);
+      await db.saveAdmins(admins);
 
       if (isSupabaseConfigured && supabase) {
         try {
@@ -551,7 +584,7 @@ export const db = {
     const userIndex = users.findIndex(u => u.email.toLowerCase() === cleanEmail);
     if (userIndex !== -1) {
       users[userIndex].password = newPassword;
-      db.saveUsers(users);
+      await db.saveUsers(users);
 
       if (isSupabaseConfigured && supabase) {
         try {
@@ -573,7 +606,7 @@ export const db = {
       joinedDate: new Date().toISOString().split('T')[0],
       authProvider: 'Email'
     };
-    db.saveUsers([newUser, ...users]);
+    await db.saveUsers([newUser, ...users]);
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -591,7 +624,7 @@ export const db = {
     if (index !== -1) {
       users[index] = { ...users[index], ...updatedData };
       finalUser = users[index];
-      db.saveUsers(users);
+      await db.saveUsers(users);
     }
     db.setCurrentUser(finalUser);
 
@@ -609,7 +642,7 @@ export const db = {
     const index = users.findIndex(u => u.id === userId);
     if (index !== -1) {
       users[index] = { ...users[index], ...updatedData };
-      db.saveUsers(users);
+      await db.saveUsers(users);
 
       if (isSupabaseConfigured && supabase) {
         try {
@@ -624,7 +657,7 @@ export const db = {
   deleteUser: async (userId) => {
     const users = db.getUsers();
     const updated = users.filter(u => u.id !== userId);
-    db.saveUsers(updated);
+    await db.saveUsers(updated);
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -639,7 +672,7 @@ export const db = {
     const index = users.findIndex(u => u.id === userId);
     if (index !== -1) {
       users[index].password = newPassword;
-      db.saveUsers(users);
+      await db.saveUsers(users);
 
       if (isSupabaseConfigured && supabase) {
         try {
@@ -669,13 +702,7 @@ export const db = {
         joinedDate: new Date().toISOString().split('T')[0],
         authProvider: 'Google'
       };
-      db.saveUsers([found, ...users]);
-
-      if (isSupabaseConfigured && supabase) {
-        try {
-          await supabase.from('users').insert([found]);
-        } catch (e) {}
-      }
+      await db.saveUsers([found, ...users]);
     }
 
     db.setCurrentUser(found);
@@ -694,11 +721,13 @@ export const db = {
   setCurrentUser: (user) => {
     try {
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      notifyDbUpdate();
     } catch (e) {}
   },
 
   logoutUser: () => {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    notifyDbUpdate();
   },
 
   // --- Admin DB Management ---
@@ -722,6 +751,7 @@ export const db = {
   saveAdmins: async (admins) => {
     try {
       localStorage.setItem(STORAGE_KEYS.ADMINS, JSON.stringify(admins));
+      notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
         await supabase.from('admins').upsert(admins);
       }

@@ -132,6 +132,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     setPendingUserData({
       name,
       email,
+      password,
       company,
       birthday,
       phone,
@@ -211,7 +212,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     }
   };
 
-  const triggerVerifyOtp = (codeToVerify) => {
+  const triggerVerifyOtp = async (codeToVerify) => {
     setError('');
 
     if (codeToVerify.length < 6) {
@@ -226,24 +227,23 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
 
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-
+    try {
       if (otpPurpose === 'forgot_password') {
+        setLoading(false);
         setMode('set_new_password');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        try {
-          const newUser = db.registerUser(pendingUserData);
-          try { confetti({ particleCount: 110, spread: 85, origin: { y: 0.6 } }); } catch (err) {}
-          onAuthSuccess(newUser, false);
-          onClose();
-        } catch (err) {
-          setError(err.message || 'Registration failed.');
-        }
+        const newUser = await db.registerUser(pendingUserData);
+        setLoading(false);
+        try { confetti({ particleCount: 110, spread: 85, origin: { y: 0.6 } }); } catch (err) {}
+        onAuthSuccess(newUser, false);
+        onClose();
       }
-    }, 400);
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'Registration failed.');
+    }
   };
 
   // Verify 6-Digit OTP Code
@@ -317,14 +317,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                 headers: { Authorization: `Bearer ${response.access_token}` }
               })
                 .then(res => res.json())
-                .then(googleProfile => {
-                  setLoading(false);
-                  const user = db.googleAuth({
+                .then(async (googleProfile) => {
+                  const user = await db.googleAuth({
                     name: googleProfile.name || googleProfile.email.split('@')[0],
                     email: googleProfile.email,
                     company: 'Google Verified Client',
                     birthday: '1998-05-14',
                   });
+                  setLoading(false);
                   try { confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
                   onAuthSuccess(user, false);
                   onClose();
@@ -359,7 +359,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     }
   };
 
-  const handleCompleteGoogleAuth = (e) => {
+  const handleCompleteGoogleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -369,24 +369,22 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     const targetCompany = googleCompany || 'Google Verified Enterprise';
     const targetBirthday = googleBirthday || '1998-05-14';
 
-    setTimeout(() => {
-      try {
-        const googleProfile = {
-          name: targetName,
-          email: targetEmail,
-          company: targetCompany,
-          birthday: targetBirthday,
-        };
-        const user = db.googleAuth(googleProfile);
-        setLoading(false);
-        try { confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
-        onAuthSuccess(user, false);
-        onClose();
-      } catch (err) {
-        setLoading(false);
-        setError('Google Authentication failed.');
-      }
-    }, 800);
+    try {
+      const googleProfile = {
+        name: targetName,
+        email: targetEmail,
+        company: targetCompany,
+        birthday: targetBirthday,
+      };
+      const user = await db.googleAuth(googleProfile);
+      setLoading(false);
+      try { confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch (err) {}
+      onAuthSuccess(user, false);
+      onClose();
+    } catch (err) {
+      setLoading(false);
+      setError('Google Authentication failed.');
+    }
   };
 
   return (

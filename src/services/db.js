@@ -327,13 +327,14 @@ export const db = {
         if (data && Array.isArray(data)) cloudUsers = data;
       } catch (e) {}
 
-      if (cloudUsers && cloudUsers.length > 0) {
-        const baseMerged = mergeDatasets(DEFAULT_USERS, cloudUsers, 'id', 'email');
-        const fullyMerged = mergeDatasets(baseMerged, localUsers, 'id', 'email');
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(fullyMerged));
+      const fetchedCloudUsers = cloudUsers || [];
+      const baseMergedUsers = mergeDatasets(DEFAULT_USERS, fetchedCloudUsers, 'id', 'email');
+      const fullyMergedUsers = mergeDatasets(baseMergedUsers, localUsers, 'id', 'email');
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(fullyMergedUsers));
 
-        const cloudEmails = new Set(cloudUsers.map(u => u.email?.toLowerCase()));
-        const localOnlyUsers = fullyMerged.filter(u => u && u.email && !cloudEmails.has(u.email.toLowerCase()));
+      if (isSupabaseConfigured && supabase && fullyMergedUsers.length > 0) {
+        const cloudEmails = new Set(fetchedCloudUsers.map(u => u.email?.toLowerCase()));
+        const localOnlyUsers = fullyMergedUsers.filter(u => u && u.email && !cloudEmails.has(u.email.toLowerCase()));
         if (localOnlyUsers.length > 0) {
           const sanitized = localOnlyUsers.map(sanitizeUserForCloud);
           await supabase.from('users').upsert(sanitized, { onConflict: 'email' }).catch(() => {});

@@ -314,7 +314,8 @@ export const db = {
         const cloudIds = new Set(cloudInquiries.map(c => c.id));
         const localOnlyInquiries = fullyMerged.filter(l => l && l.id && !cloudIds.has(l.id));
         if (localOnlyInquiries.length > 0) {
-          await supabase.from('inquiries').upsert(localOnlyInquiries).catch(() => {});
+          const sanitized = localOnlyInquiries.map(sanitizeInquiryForCloud);
+          await supabase.from('inquiries').upsert(sanitized, { onConflict: 'id' }).catch(() => {});
         }
       }
 
@@ -334,7 +335,8 @@ export const db = {
         const cloudEmails = new Set(cloudUsers.map(u => u.email?.toLowerCase()));
         const localOnlyUsers = fullyMerged.filter(u => u && u.email && !cloudEmails.has(u.email.toLowerCase()));
         if (localOnlyUsers.length > 0) {
-          await supabase.from('users').upsert(localOnlyUsers).catch(() => {});
+          const sanitized = localOnlyUsers.map(sanitizeUserForCloud);
+          await supabase.from('users').upsert(sanitized, { onConflict: 'email' }).catch(() => {});
         }
       }
 
@@ -354,7 +356,8 @@ export const db = {
         const cloudAdminEmails = new Set(cloudAdmins.map(a => a.email?.toLowerCase()));
         const localOnlyAdmins = fullyMerged.filter(a => a && a.email && !cloudAdminEmails.has(a.email.toLowerCase()));
         if (localOnlyAdmins.length > 0) {
-          await supabase.from('admins').upsert(localOnlyAdmins).catch(() => {});
+          const sanitized = localOnlyAdmins.map(sanitizeAdminForCloud);
+          await supabase.from('admins').upsert(sanitized, { onConflict: 'email' }).catch(() => {});
         }
       }
 

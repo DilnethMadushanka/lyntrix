@@ -425,7 +425,7 @@ export const db = {
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
       notifyDbUpdate();
       if (isSupabaseConfigured && supabase) {
-        const payload = services.map(s => ({
+        const fullPayload = services.map(s => ({
           id: s.id,
           title: s.title,
           description: s.description || '',
@@ -435,7 +435,20 @@ export const db = {
           architect: s.architect || '',
           sla: s.sla || ''
         }));
-        await supabase.from('services').upsert(payload);
+        
+        const { error } = await supabase.from('services').upsert(fullPayload, { onConflict: 'id' });
+        if (error) {
+          // If extra columns like 'architect' don't exist in Supabase schema yet, fallback to core price payload
+          console.warn('[SUPABASE SERVICES FULL UPSERT WARN, FALLING BACK TO CORE PRICES]:', error.message);
+          const corePayload = services.map(s => ({
+            id: s.id,
+            title: s.title,
+            description: s.description || '',
+            basePrice: Number(s.basePrice) || 0
+          }));
+          const { error: fallbackError } = await supabase.from('services').upsert(corePayload, { onConflict: 'id' });
+          if (fallbackError) console.error('[SUPABASE SERVICES CORE UPSERT ERROR]:', fallbackError.message);
+        }
       }
     } catch (e) {
       console.warn('[SUPABASE SERVICES UPSERT NOTE]:', e.message);
